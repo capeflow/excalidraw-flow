@@ -8,7 +8,16 @@ export async function sceneToSvg(
 ): Promise<{ animatedSvg: string; width: number; height: number; dashLengths: number[] }> {
   const { elements, appState } = data;
   // Export scene to SVG DOM element
-  const svgElem = (await exportToSvg({ elements, appState, name: 'scene' })) as any;
+  const svgElem = (await exportToSvg({ 
+    elements, 
+    appState: {
+      ...appState,
+      exportBackground: true,
+      exportWithDarkMode: false,
+      exportPadding: 0
+    }, 
+    name: 'scene' 
+  })) as any;
 
   // Clone the node so we don't alter Excalidraw's internal state
   const svgClone = (svgElem.cloneNode(true) as unknown) as SVGSVGElement;
@@ -17,6 +26,16 @@ export async function sceneToSvg(
   Array.from(svgClone.querySelectorAll<SVGTextElement>('text')).forEach((t) => {
     t.setAttribute('font-family', 'Excalifont, sans-serif');
   });
+
+  // Ensure background is white with no borders
+  svgClone.style.backgroundColor = '#ffffff';
+  svgClone.setAttribute('style', 'background-color: #ffffff; display: block;');
+  
+  // Remove any potential artifacts causing gray lines
+  const backgroundRect = svgClone.querySelector('rect');
+  if (backgroundRect) {
+    backgroundRect.setAttribute('fill', '#ffffff');
+  }
 
   // Find dashed paths (those with stroke-dasharray)
   const dashedPaths = Array.from(

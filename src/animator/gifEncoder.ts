@@ -12,7 +12,7 @@ import workerScriptUrl from 'gif.js.optimized/dist/gif.worker.js?url'
 export function encodeGif(
   canvases: HTMLCanvasElement[],
   frameDelay: number,
-  options: { quality?: number; workers?: number } = {},
+  options: { quality?: number; workers?: number; transparent?: boolean } = {},
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -20,18 +20,40 @@ export function encodeGif(
       reject(new Error('No frames to encode'))
       return
     }
-    const { quality = 10, workers = 2 } = options
+    const { quality = 10, workers = 2, transparent = false } = options
+    
+    // Process canvases to ensure no gray border artifacts
+    const processedCanvases = canvases.map(canvas => {
+      // Create a clean copy of each canvas
+      const cleanCanvas = document.createElement('canvas');
+      cleanCanvas.width = canvas.width;
+      cleanCanvas.height = canvas.height;
+      const ctx = cleanCanvas.getContext('2d');
+      if (ctx) {
+        // Fill with white background first
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Draw the original canvas content
+        ctx.drawImage(canvas, 0, 0);
+      }
+      return cleanCanvas;
+    });
+    
     const gif = new GIF({
       workers,
       quality,
       repeat: 0,
       workerScript: workerScriptUrl,
-      width: canvases[0].width,
-      height: canvases[0].height,
+      width: processedCanvases[0].width,
+      height: processedCanvases[0].height,
+      background: '#ffffff',
+      transparent: transparent ? 0xFF00FF : null, // Use magenta as transparent color if needed
     })
-    canvases.forEach((canvas) => {
+    
+    processedCanvases.forEach((canvas) => {
       gif.addFrame(canvas, { copy: true, delay: frameDelay })
     })
+    
     if (onProgress) {
       gif.on('progress', (p: number) => {
         onProgress(p)

@@ -1,28 +1,38 @@
-import React, { useState, useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
+import React, { useState } from 'react'
 import { parseScene, ParsedScene } from './parser'
 import { sceneToSvg } from './sceneToSvg'
 import { renderFrames } from './animator/frameRenderer'
 import { encodeGif } from './animator/gifEncoder'
 import './App.css'
+import { Header } from './components/Header'
+import { FileUploader } from './components/FileUploader'
+import { AnimationSettings } from './components/AnimationSettings'
+import { PreviewSection } from './components/PreviewSection'
+import { ExampleGallery } from './components/ExampleGallery'
 
-function App() {
+export function App() {
+  const [file, setFile] = useState<File | null>(null)
   const [parsedScene, setParsedScene] = useState<ParsedScene | null>(null)
   const [dashedCount, setDashedCount] = useState<number>(0)
   const [progress, setProgress] = useState<number>(0)
   const [gifUrl, setGifUrl] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(false)
+  const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   // State for animation duration in seconds
-  const [animationDuration, setAnimationDuration] = useState<number>(2)
+  const [animationSpeed, setAnimationSpeed] = useState<number>(1)
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  // Handle file selection or drop
+  const handleFileUpload = (uploadedFile: File | null) => {
     setError(null)
     setGifUrl('')
     setParsedScene(null)
     setDashedCount(0)
     setProgress(0)
-    const file = acceptedFiles[0]
+    if (!uploadedFile) {
+      setFile(null)
+      return
+    }
+    setFile(uploadedFile)
     const reader = new FileReader()
     reader.onload = () => {
       try {
@@ -37,22 +47,17 @@ function App() {
         setError('Failed to parse scene: ' + e.message)
       }
     }
-    reader.readAsText(file)
-  }, [])
+    reader.readAsText(uploadedFile)
+  }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'application/json': ['.json', '.excalidraw'] },
-    multiple: false,
-  })
-
-  const generateAnimation = async () => {
+  // Trigger GIF generation
+  const handleGenerateGif = async () => {
     if (!parsedScene) return
     if (dashedCount === 0) {
       setError('No dashed arrows to animate.')
       return
     }
-    setLoading(true)
+    setIsGenerating(true)
     setError(null)
     setProgress(0)
     try {
@@ -63,11 +68,11 @@ function App() {
         await document.fonts.load(`12px Excalifont`)
       }
 
-      const fps = 12
-      const duration = animationDuration // seconds
-      const frameCount = fps * duration
+      const fps = 24
+      // Linear inverse mapping: base duration at 1x speed is 1.5s, so max speed (3x) yields 0.5s
+      const baseDuration = 1.5 // seconds at 1x speed
+      const frameCount = Math.max(1, Math.round((fps * baseDuration) / animationSpeed))
 
-      // Stage 1: render frames (0% to 50%)
       const canvases = await renderFrames(
         animatedSvg,
         dashLengths,
@@ -77,7 +82,6 @@ function App() {
         (i) => setProgress((i / frameCount) * 0.5)
       )
 
-      // Stage 2: encode GIF (50% to 100%)
       const delay = Math.round(1000 / fps)
       const blob = await encodeGif(
         canvases,
@@ -90,83 +94,45 @@ function App() {
     } catch (e: any) {
       setError('Animation failed: ' + e.message)
     } finally {
-      setLoading(false)
+      setIsGenerating(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-2xl mx-auto bg-white shadow p-6 rounded space-y-4">
-        <h1 className="text-2xl font-bold">Excalidraw Arrow Animator</h1>
-        <div
-          {...getRootProps()}
-          className="border-2 border-dashed border-gray-400 p-6 text-center cursor-pointer"
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <p>Drop file here...</p>
-          ) : (
-            <p>Drag & drop an .excalidraw file, or click to select</p>
-          )}
-        </div>
-        {parsedScene && (
-          <div>
-            <p className="text-sm">
-              ✅ Found <strong>{dashedCount}</strong> dashed arrow{dashedCount !== 1 && 's'}
-            </p>
-            <div className="flex items-center space-x-2">
-              <label htmlFor="duration" className="text-sm">Animation duration (seconds):</label>
-              <input
-                id="duration"
-                type="range"
-                min="0.5"
-                max="5"
-                step="0.1"
-                value={animationDuration}
-                onChange={(e) => setAnimationDuration(parseFloat(e.target.value))}
-                disabled={loading}
-                className="flex-1"
-              />
-              <span className="text-sm">{animationDuration.toFixed(1)}</span>
-            </div>
-          </div>
-        )}
-        <button
-          onClick={generateAnimation}
-          disabled={loading || dashedCount === 0 || !parsedScene}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Processing...' : 'Animate Arrows'}
-        </button>
-        {loading && (
-          <div className="w-full bg-gray-200 rounded h-3 overflow-hidden">
-            <div
-              className="bg-blue-600 h-full"
-              style={{ width: `${Math.round(progress * 100)}%` }}
-            />
-            <p className="text-sm text-gray-600 mt-1">
-              {Math.round(progress * 100)}%
-            </p>
-          </div>
-        )}
-        {error && <p className="text-red-600">{error}</p>}
-      </div>
+  const handleSpeedChange = (speed: number) => {
+    setAnimationSpeed(speed)
+  }
 
-      {gifUrl && (
-        <div className="max-w-4xl mx-auto mt-8 text-center">
-          <h2 className="text-xl font-semibold mb-2">Animated GIF</h2>
-          <img src={gifUrl} alt="Animation preview" className="mx-auto" />
-          <a
-            href={gifUrl}
-            download="excalidraw-animation.gif"
-            className="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Download GIF
-          </a>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-1 space-y-6">
+            <FileUploader onFileUpload={handleFileUpload} />
+            <AnimationSettings
+              speed={animationSpeed}
+              onSpeedChange={handleSpeedChange}
+              onGenerate={handleGenerateGif}
+              isGenerating={isGenerating}
+              disabled={!parsedScene || dashedCount === 0}
+            />
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+          </div>
+          <div className="md:col-span-2">
+            <PreviewSection
+              file={file}
+              generatedGifUrl={gifUrl}
+              isGenerating={isGenerating}
+            />
+          </div>
         </div>
-      )}
+        <div className="mt-16">
+          <ExampleGallery />
+        </div>
+      </main>
     </div>
   )
 }
 
+// Add default export for compatibility with main.tsx
 export default App
