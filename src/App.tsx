@@ -20,6 +20,9 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   // State for animation duration in seconds
   const [animationSpeed, setAnimationSpeed] = useState<number>(1)
+  const [colorFrom, setColorFrom] = useState<string>('#000000')
+  const [colorTo, setColorTo] = useState<string>('#ff0000')
+  const [useGradientWave, setUseGradientWave] = useState<boolean>(false)
 
   // Handle file selection or drop
   const handleFileUpload = (uploadedFile: File | null) => {
@@ -79,7 +82,10 @@ export function App() {
         width,
         height,
         frameCount,
-        (i) => setProgress((i / frameCount) * 0.5)
+        (i) => setProgress((i / frameCount) * 0.5),
+        colorFrom,
+        colorTo,
+        useGradientWave
       )
 
       const delay = Math.round(1000 / fps)
@@ -112,6 +118,12 @@ export function App() {
             <AnimationSettings
               speed={animationSpeed}
               onSpeedChange={handleSpeedChange}
+              colorFrom={colorFrom}
+              colorTo={colorTo}
+              onColorFromChange={setColorFrom}
+              onColorToChange={setColorTo}
+              useGradientWave={useGradientWave}
+              onUseGradientWaveChange={setUseGradientWave}
               onGenerate={handleGenerateGif}
               isGenerating={isGenerating}
               disabled={!parsedScene || dashedCount === 0}
