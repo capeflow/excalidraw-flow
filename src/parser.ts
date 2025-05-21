@@ -4,6 +4,7 @@ export interface ParsedScene {
   elements: any[];
   appState: any;
   dashedArrows: any[];
+  files: Record<string, any>;
 }
 
 export function parseScene(data: any): ParsedScene {
@@ -14,9 +15,11 @@ export function parseScene(data: any): ParsedScene {
   const dashedArrows = elements.filter((el) =>
     (el.type === "arrow" || el.type === "line") && el.strokeStyle === "dashed"
   );
+  const files = data.files ?? {};
   return {
     elements,
     appState: data.appState,
     dashedArrows,
+    files,
   };
 } 

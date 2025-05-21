@@ -6,10 +6,11 @@ import { exportToSvg } from '@excalidraw/excalidraw';
 export async function sceneToSvg(
   data: any
 ): Promise<{ animatedSvg: string; width: number; height: number; dashLengths: number[] }> {
-  const { elements, appState } = data;
+  const { elements, appState, files } = data;
   // Export scene to SVG DOM element
   const svgElem = (await exportToSvg({ 
-    elements, 
+    elements,
+    files,
     appState: {
       ...appState,
       exportBackground: true,
