@@ -23,6 +23,8 @@ export function App() {
   const [colorFrom, setColorFrom] = useState<string>('#000000')
   const [colorTo, setColorTo] = useState<string>('#ff0000')
   const [useGradientWave, setUseGradientWave] = useState<boolean>(false)
+  // State for arrow thickness in pixels
+  const [arrowThickness, setArrowThickness] = useState<number>(4)
 
   // Handle file selection or drop
   const handleFileUpload = (uploadedFile: File | null) => {
@@ -85,7 +87,8 @@ export function App() {
         (i) => setProgress((i / frameCount) * 0.5),
         colorFrom,
         colorTo,
-        useGradientWave
+        useGradientWave,
+        arrowThickness
       )
 
       const delay = Math.round(1000 / fps)
@@ -124,6 +127,8 @@ export function App() {
               onColorToChange={setColorTo}
               useGradientWave={useGradientWave}
               onUseGradientWaveChange={setUseGradientWave}
+              thickness={arrowThickness}
+              onThicknessChange={setArrowThickness}
               onGenerate={handleGenerateGif}
               isGenerating={isGenerating}
               disabled={!parsedScene || dashedCount === 0}

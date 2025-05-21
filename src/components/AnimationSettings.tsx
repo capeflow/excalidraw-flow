@@ -10,6 +10,8 @@ export interface AnimationSettingsProps {
   onColorToChange: (color: string) => void
   useGradientWave: boolean
   onUseGradientWaveChange: (enabled: boolean) => void
+  thickness: number
+  onThicknessChange: (thickness: number) => void
   onGenerate: () => void
   isGenerating: boolean
   disabled: boolean
@@ -24,6 +26,8 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
   onColorToChange,
   useGradientWave,
   onUseGradientWaveChange,
+  thickness,
+  onThicknessChange,
   onGenerate,
   isGenerating,
   disabled,
@@ -37,7 +41,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
           <label htmlFor="animation-speed" className="block text-sm font-medium text-gray-700 mb-1">
             Animation Speed: {speed}x
           </label>
-          <input id="animation-speed" type="range" min="0.5" max="3" step="0.1" value={speed} onChange={e => onSpeedChange(parseFloat(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+          <input id="animation-speed" type="range" min="0.5" max="5" step="0.1" value={speed} onChange={e => onSpeedChange(parseFloat(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>Slower</span>
             <span>Faster</span>
@@ -78,6 +82,25 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
             />
             <span className="ml-2 text-sm text-gray-700">Enable Wave Gradient</span>
           </label>
+        </div>
+        <div>
+          <label htmlFor="stroke-thickness" className="block text-sm font-medium text-gray-700 mb-1">
+            Stroke Thickness: {thickness}px
+          </label>
+          <input
+            id="stroke-thickness"
+            type="range"
+            min="1"
+            max="10"
+            step="0.5"
+            value={thickness}
+            onChange={e => onThicknessChange(parseFloat(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Thin</span>
+            <span>Thick</span>
+          </div>
         </div>
         <button onClick={onGenerate} disabled={disabled || isGenerating} className={`w-full py-2 px-4 rounded-md flex items-center justify-center transition-colors ${disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
           {isGenerating ? <>

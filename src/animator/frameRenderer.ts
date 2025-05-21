@@ -54,6 +54,7 @@ function injectWaveGradient(
  * @param colorFrom Starting gradient color
  * @param colorTo Ending gradient color
  * @param useGradientWave Flag to enable color-wave gradients
+ * @param strokeWidth Optional stroke width for dashed paths
  * @returns Array of canvases for each frame
  */
 export async function renderFrames(
@@ -65,10 +66,18 @@ export async function renderFrames(
   onFrame?: (frameIndex: number) => void,
   colorFrom: string = '#000000',
   colorTo: string = '#000000',
-  useGradientWave: boolean = false
+  useGradientWave: boolean = false,
+  strokeWidth?: number
 ): Promise<HTMLCanvasElement[]> {
   const parser = new DOMParser();
   const doc = parser.parseFromString(animatedSvg, 'image/svg+xml');
+  
+  // Override stroke width for dashed paths (arrow shafts and heads scale with strokeWidth)
+  if (strokeWidth != null) {
+    doc.querySelectorAll<SVGPathElement>('path.animated-dash').forEach((p) =>
+      p.setAttribute('stroke-width', strokeWidth.toString())
+    );
+  }
   
   // Ensure SVG has white background and no borders
   const svgRoot = doc.documentElement;
