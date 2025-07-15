@@ -54,7 +54,7 @@ export const ProgressBar: React.FC = () => {
   };
 
   return (
-    <Card className="p-6 space-y-4 shadow-lg">
+    <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Animation Generation Progress</h3>
@@ -69,25 +69,29 @@ export const ProgressBar: React.FC = () => {
         <div className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Overall Progress</span>
-            <span className="font-medium">{state.totalProgress}%</span>
+            <span className="font-medium" aria-live="polite">{state.totalProgress}%</span>
           </div>
-          <Progress value={state.totalProgress} className="h-3" />
+          <Progress 
+            value={state.totalProgress} 
+            className="h-3" 
+            aria-label={`Overall progress: ${state.totalProgress}%`}
+          />
         </div>
       </div>
 
       {state.error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
           <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4" />
+            <XCircle className="h-4 w-4 flex-shrink-0" />
             <span className="font-medium">Error:</span>
-            <span>{state.error}</span>
+            <span className="break-words">{state.error}</span>
           </div>
         </div>
       )}
 
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-muted-foreground">Steps</h4>
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {state.steps.map((step) => (
             <div
               key={step.id}
@@ -98,21 +102,27 @@ export const ProgressBar: React.FC = () => {
                 step.status === 'error' && "border-red-500 bg-red-50/50",
                 step.status === 'pending' && "border-gray-200 bg-gray-50/30"
               )}
+              role="status"
+              aria-label={`Step ${step.name}: ${step.status}`}
             >
               {getStepIcon(step.status)}
               
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 space-y-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{step.name}</span>
+                  <span className="font-medium text-sm truncate">{step.name}</span>
                   {getStatusBadge(step.status)}
                 </div>
                 
                 {step.message && (
-                  <p className="text-xs text-muted-foreground">{step.message}</p>
+                  <p className="text-xs text-muted-foreground break-words">{step.message}</p>
                 )}
                 
                 {step.status === 'in-progress' && (
-                  <Progress value={step.progress} className="h-1.5" />
+                  <Progress 
+                    value={step.progress} 
+                    className="h-1.5" 
+                    aria-label={`${step.name} progress: ${step.progress}%`}
+                  />
                 )}
                 
                 {step.duration && (
@@ -127,16 +137,16 @@ export const ProgressBar: React.FC = () => {
       </div>
 
       {!state.isRunning && state.steps.every(s => s.status === 'completed') && (
-        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-800">
+        <div className="rounded-lg bg-green-50 p-3 text-sm text-green-800" role="status">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
             <span className="font-medium">Success!</span>
-            <span>
+            <span className="break-words">
               Animation generated in {formatTime(Math.round((Date.now() - (state.startTime || 0)) / 1000))}
             </span>
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }; 

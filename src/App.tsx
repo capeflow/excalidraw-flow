@@ -16,6 +16,7 @@ import { progressTracker } from './lib/progressTracker'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Button } from './components/ui/button'
 import { Bug } from 'lucide-react'
+import { calculateFrameCount, SPEED_CONFIG } from './lib/animationSpeed'
 
 export function App() {
   const [file, setFile] = useState<File | null>(null)
@@ -25,8 +26,8 @@ export function App() {
   const [gifUrl, setGifUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  // State for animation duration in seconds
-  const [animationSpeed, setAnimationSpeed] = useState<number>(1)
+  // State for animation speed (default is 2x for snappy animations)
+  const [animationSpeed, setAnimationSpeed] = useState<number>(SPEED_CONFIG.default)
   const [colorFrom, setColorFrom] = useState<string>('#000000')
   const [colorTo, setColorTo] = useState<string>('#ff0000')
   const [useGradientWave, setUseGradientWave] = useState<boolean>(false)
@@ -117,11 +118,9 @@ export function App() {
       progressTracker.updateStep('load-fonts', { status: 'completed', progress: 100 });
 
       const fps = 24
-      // Linear inverse mapping: base duration at 1x speed is 1.5s, so max speed (3x) yields 0.5s
-      const baseDuration = 1.5 // seconds at 1x speed
-      const frameCount = Math.max(1, Math.round((fps * baseDuration) / animationSpeed))
+      const frameCount = calculateFrameCount(animationSpeed, fps)
 
-      logger.info('Rendering frames', { frameCount, fps }, 'App');
+      logger.info('Rendering frames', { frameCount, fps, speed: animationSpeed }, 'App');
       const canvases = await renderFrames(
         animatedSvg,
         dashLengths,
