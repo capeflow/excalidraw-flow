@@ -8,7 +8,7 @@ import { Header } from './components/Header'
 import { FileUploader } from './components/FileUploader'
 import { AnimationSettings } from './components/AnimationSettings'
 import { PreviewSection } from './components/PreviewSection'
-import { ExampleGallery } from './components/ExampleGallery'
+
 import { ProgressBar } from './components/ProgressBar'
 import { LogViewer } from './components/LogViewer'
 import { logger } from './lib/logger'
@@ -229,10 +229,7 @@ export function App() {
             </Tabs>
           </div>
         )}
-        
-        <div className="mt-16">
-          <ExampleGallery />
-        </div>
+
       </main>
     </div>
   )
