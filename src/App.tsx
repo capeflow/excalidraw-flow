@@ -168,6 +168,8 @@ export function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1 space-y-6">
             <FileUploader onFileUpload={handleFileUpload} />
+            {/* Progress bar integrated tightly below upload area */}
+            <ProgressBar compact={true} />
             <AnimationSettings
               speed={animationSpeed}
               onSpeedChange={handleSpeedChange}
@@ -191,7 +193,6 @@ export function App() {
               generatedGifUrl={gifUrl}
               isGenerating={isGenerating}
             />
-            {isGenerating && <ProgressBar />}
           </div>
         </div>
         
