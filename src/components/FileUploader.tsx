@@ -1,5 +1,6 @@
 import React, { useState, useRef, DragEvent, ChangeEvent } from 'react'
 import { UploadIcon, FileIcon, XIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface FileUploaderProps {
   onFileUpload: (file: File | null) => void
@@ -52,14 +53,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Upload Excalidraw File
-      </h2>
-      
+    <div className="bg-white p-5 rounded-xl border-2 border-gray-900 shadow-[4px_4px_0_rgba(0,0,0,0.25)]">
+      <h2 className="text-base font-semibold text-gray-900 mb-3">Upload Excalidraw File</h2>
+
       <div
-        className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-          dragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'
+        className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors shadow-[3px_3px_0_rgba(0,0,0,0.15)] ${
+          dragActive ? 'border-gray-900 bg-yellow-50' : 'border-gray-900 hover:bg-gray-50'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -69,35 +68,25 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
       >
         {!selectedFile ? (
           <>
-            <UploadIcon className="h-10 w-10 text-gray-400 mb-3" />
-            <p className="text-gray-600 text-center mb-1">
-              Drag and drop your Excalidraw file here
-            </p>
-            <p className="text-gray-500 text-sm text-center">
-              or click to browse
-            </p>
+            <UploadIcon className="h-10 w-10 text-gray-700 mb-3" />
+            <p className="text-gray-800 text-center font-medium mb-1">Drag and drop your Excalidraw file here</p>
+            <p className="text-gray-600 text-sm text-center">or click to browse</p>
           </>
         ) : (
-          <div className="flex items-center w-full">
-            <FileIcon className="h-8 w-8 text-indigo-500 mr-3" />
+          <div className="flex items-center w-full gap-3">
+            <FileIcon className="h-8 w-8 text-indigo-600" />
             <div className="flex-1 truncate">
-              <p className="text-gray-800 font-medium truncate">
-                {selectedFile.name}
-              </p>
-              <p className="text-gray-500 text-sm">
-                {(selectedFile.size / 1024).toFixed(2)} KB
-              </p>
+              <p className="text-gray-900 font-medium truncate">{selectedFile.name}</p>
+              <p className="text-gray-600 text-sm">{(selectedFile.size / 1024).toFixed(2)} KB</p>
             </div>
-            <button
-              className="p-1 rounded-full hover:bg-gray-100"
-              onClick={removeFile}
-            >
-              <XIcon className="h-5 w-5 text-gray-500" />
-            </button>
+            <Button variant="outline" size="sm" onClick={removeFile} aria-label="Remove file">
+              <XIcon className="h-4 w-4" />
+              Remove
+            </Button>
           </div>
         )}
       </div>
-      
+
       <input
         ref={inputRef}
         type="file"
@@ -105,9 +94,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
         accept=".excalidraw,.json"
         onChange={handleChange}
       />
-      <p className="text-xs text-gray-500 mt-2">
-        Supported formats: .excalidraw, .json
-      </p>
+      <p className="text-xs text-gray-600 mt-2">Supported formats: .excalidraw, .json</p>
     </div>
   )
 } 

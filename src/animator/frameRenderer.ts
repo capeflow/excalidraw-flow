@@ -3,48 +3,37 @@ import { logger } from '@/lib/logger';
 import { progressTracker } from '@/lib/progressTracker';
 
 /**
- * Injects a single global wave gradient that repeats every waveLen pixels across the SVG.
- * waveLen is the length of one wave cycle in user space.
+ * Create a simple overlay glint using an overlaid path with its own dash pattern.
+ * This avoids gradients and aligns motion with dash offset for a stable effect.
  */
-function injectWaveGradient(
-  doc: Document,
-  waveLen: number,
-  colorFrom: string,
-  colorTo: string
-): SVGLinearGradientElement {
-  logger.debug('Creating wave gradient', { waveLen, colorFrom, colorTo }, 'FrameRenderer');
-  
-  const svgNS = 'http://www.w3.org/2000/svg';
-  // Ensure <defs> exists
-  let defs = doc.querySelector('defs') as SVGDefsElement;
-  if (!defs) {
-    defs = doc.createElementNS(svgNS, 'defs');
-    doc.documentElement.insertBefore(defs, doc.documentElement.firstChild);
+function createWaveOverlay(
+  path: SVGPathElement,
+  onLen: number,
+  offLen: number,
+  colorTo: string,
+  strokeWidth?: number
+): SVGPathElement {
+  const overlay = path.cloneNode(true) as SVGPathElement;
+  overlay.removeAttribute('filter');
+  overlay.setAttribute('class', (path.getAttribute('class') || '') + ' wave-overlay');
+  overlay.setAttribute('stroke', colorTo);
+  overlay.setAttribute('fill', 'none');
+  overlay.setAttribute('stroke-linecap', 'round');
+  overlay.setAttribute('stroke-linejoin', 'round');
+  if (strokeWidth != null) {
+    overlay.setAttribute('stroke-width', String(strokeWidth));
   }
-  // Create the gradient element
-  const grad = doc.createElementNS(svgNS, 'linearGradient');
-  grad.setAttribute('id', 'waveGrad');
-  grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-  grad.setAttribute('x1', '0');
-  grad.setAttribute('y1', '0');
-  grad.setAttribute('x2', waveLen.toString());
-  grad.setAttribute('y2', '0');
-  grad.setAttribute('spreadMethod', 'repeat');
-  // Define a narrow color band in the middle of the gradient
-  [['0%', colorFrom], ['40%', colorFrom], ['50%', colorTo], ['60%', colorFrom], ['100%', colorFrom]].forEach(
-    ([offset, col]) => {
-      const stop = doc.createElementNS(svgNS, 'stop');
-      stop.setAttribute('offset', offset);
-      stop.setAttribute('stop-color', col);
-      grad.appendChild(stop);
-    }
-  );
-  defs.appendChild(grad);
-  // Apply the gradient stroke to all animated dashed paths
-  doc.querySelectorAll<SVGPathElement>('path.animated-dash').forEach((p) =>
-    p.setAttribute('stroke', 'url(#waveGrad)')
-  );
-  return grad;
+  const onVal = Math.max(1, onLen);
+  // Use extremely large gap to guarantee a single visible segment per path
+  const offVal = Math.max(1, offLen);
+  overlay.setAttribute('stroke-dasharray', `${onVal} ${offVal}`);
+  overlay.setAttribute('stroke-dashoffset', '0');
+  // Higher opacity glint; caller can tweak if needed
+  overlay.setAttribute('stroke-opacity', '1');
+
+  // Insert overlay after the original path so it renders above
+  path.parentNode?.insertBefore(overlay, path.nextSibling);
+  return overlay;
 }
 
 /**
@@ -68,9 +57,12 @@ export async function renderFrames(
   height: number,
   frameCount: number,
   onFrame?: (frameIndex: number) => void,
-  colorFrom: string = '#000000',
+  _colorFrom: string = '#000000',
   colorTo: string = '#000000',
   useGradientWave: boolean = false,
+  _waveFrequency: number = 1.0,
+  waveBandWidth: number = 0.3,
+  glintSpeed: number = 0.006,
   strokeWidth?: number
 ): Promise<HTMLCanvasElement[]> {
   const startTime = performance.now();
@@ -107,16 +99,39 @@ export async function renderFrames(
   const paths = doc.querySelectorAll<SVGPathElement>('path.animated-dash');
   logger.debug(`Found ${paths.length} animated paths`, undefined, 'FrameRenderer');
   
-  // Set up global wave gradient if enabled
-  const waveCycles = 4;            // number of wave cycles across the SVG width
-  const waveSpeedFactor = 1.2;     // wave animation speed factor relative to dash movement
-  let waveGrad: SVGLinearGradientElement | null = null;
-  let waveLen = 0;
+  // Set up overlay glints if enabled
+  type OverlayWave = { overlay: SVGPathElement; totalLen: number; speedMul: number };
+  const overlayWaves: OverlayWave[] = [];
   if (useGradientWave) {
-    // Calculate length of one wave cycle
-    waveLen = width / waveCycles;
-    waveGrad = injectWaveGradient(doc, waveLen, colorFrom, colorTo);
+    const band = Math.max(0.05, Math.min(0.6, waveBandWidth || 0.3));
+    paths.forEach((p, idx) => {
+      // Ensure base path color is the base colorFrom so the overlay "rushes over" a contrasting color
+      p.setAttribute('stroke', _colorFrom);
+
+      // Access dashLengths to keep interface consistent (no longer used for glint sizing)
+      void dashLengths[idx];
+      let totalLen = 0;
+      try {
+        totalLen = Math.max(4, (p as any).getTotalLength?.() ?? 0);
+      } catch {
+        const bbox = p.getBBox();
+        totalLen = Math.max(4, Math.hypot(bbox.width, bbox.height));
+      }
+      // Glint size as a small fraction of total length; big gap to guarantee a single segment
+      const glintFrac = Math.max(0.03, Math.min(0.20, 0.02 + band * 0.25));
+      const glintLen = Math.max(2, totalLen * glintFrac);
+      const offLen = 1000000; // huge gap ensures only one visible segment across the path
+
+      // Single glint overlay
+      const overlay = createWaveOverlay(p, glintLen, offLen, colorTo, strokeWidth);
+
+      const speedMul = Math.max(0.0001, Math.min(4, glintSpeed || 0.006));
+      overlayWaves.push({ overlay, totalLen, speedMul });
+    });
   }
+
+  // If using glint effect, keep base dashes static so only the glint moves
+  // Reset per-frame instead of once to avoid carry-over when toggling modes
   const canvases: HTMLCanvasElement[] = [];
 
   // Update progress for frame rendering
@@ -127,17 +142,30 @@ export async function renderFrames(
 
   for (let i = 0; i < frameCount; i++) {
     const frameStartTime = performance.now();
-    const t = i / frameCount;
+    const t = frameCount > 1 ? (i / (frameCount - 1)) : 1; // normalize 0..1 inclusive
     
     // Animate dash offsets for all paths
     paths.forEach((p, idx) => {
       p.style.strokeDashoffset = `-${dashLengths[idx] * t}`;
     });
     
-    // Animate the wave gradient by sliding it by one wave length
-    if (waveGrad) {
-      const shift = (waveLen * t * waveSpeedFactor) % waveLen;
-      waveGrad.setAttribute('gradientTransform', `translate(${-shift},0)`);
+    // Animate overlay glints: move along total path length
+    if (useGradientWave) {
+      overlayWaves.forEach(({ overlay, totalLen, speedMul }) => {
+        // Map glintSpeed (speedMul) to pacing while ensuring full coverage by last frame
+        const s = Math.max(0.0001, Math.min(1, speedMul));
+        const minPow = 3.0; // slower early movement
+        const maxPow = 0.5; // faster early movement
+        const pacePow = minPow + (maxPow - minPow) * ((s - 0.0001) / (1 - 0.0001));
+        const easedT = Math.pow(t, pacePow);
+        const shift = totalLen * easedT;
+        overlay.style.strokeDashoffset = `-${shift}`;
+      });
+    } else {
+      // Default behavior: animate base dash offset (legacy flow animation)
+      paths.forEach((p, idx) => {
+        p.style.strokeDashoffset = `-${dashLengths[idx] * t}`;
+      });
     }
     
     const serialized = new XMLSerializer().serializeToString(doc);

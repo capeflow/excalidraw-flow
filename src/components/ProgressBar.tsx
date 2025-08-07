@@ -46,13 +46,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ compact = false }) => 
 
   return (
     <div className={cn(
-      "bg-white rounded-xl shadow-lg border-2 border-gray-900 space-y-4",
+      "bg-white rounded-xl border-2 border-gray-900 space-y-4 shadow-[4px_4px_0_rgba(0,0,0,0.2)]",
       compact ? "p-4" : "p-6 space-y-6",
       isBaseline && "opacity-60"
     )} 
          style={{ 
-           fontFamily: 'Excalifont, system-ui, sans-serif',
-           boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.15)'
+           fontFamily: 'Excalifont, system-ui, sans-serif'
          }}>
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -87,8 +86,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ compact = false }) => 
         <div className={cn(
           "relative bg-gray-100 rounded-lg border-2 border-gray-900 overflow-hidden",
           compact ? "h-8" : "h-10"
-        )}
-             style={{ boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+        )}>
           <div 
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out"
             style={{ 

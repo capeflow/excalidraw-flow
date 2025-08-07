@@ -4,10 +4,9 @@ import { Slider } from './ui/slider'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Switch } from './ui/switch'
+// import { Switch } from './ui/switch'
 import { Label } from './ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
-import { cn } from '@/lib/utils'
 import {
   SPEED_PRESETS,
   sliderToSpeed,
@@ -27,6 +26,12 @@ export interface AnimationSettingsProps {
   onColorToChange: (color: string) => void
   useGradientWave: boolean
   onUseGradientWaveChange: (enabled: boolean) => void
+  waveFrequency: number
+  onWaveFrequencyChange: (frequency: number) => void
+  waveBandWidth: number
+  onWaveBandWidthChange: (bandWidth: number) => void
+  glintSpeed: number
+  onGlintSpeedChange: (speed: number) => void
   thickness: number
   onThicknessChange: (thickness: number) => void
   onGenerate: () => void
@@ -43,6 +48,12 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
   onColorToChange,
   useGradientWave,
   onUseGradientWaveChange,
+  waveFrequency,
+  onWaveFrequencyChange,
+  waveBandWidth,
+  onWaveBandWidthChange,
+  glintSpeed,
+  onGlintSpeedChange,
   thickness,
   onThicknessChange,
   onGenerate,
@@ -80,10 +91,8 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
   const duration = calculateDuration(speed);
   
   return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Animation Settings
-      </h2>
+    <Card className="p-5">
+      <h2 className="text-base font-semibold text-gray-900 mb-2">Animation Settings</h2>
       
       <Tabs defaultValue="speed" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
@@ -142,12 +151,12 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
           </div>
           
           {/* Duration Display */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg border-2 border-gray-900">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Animation Duration</span>
             </div>
-            <Badge variant="secondary" className="font-mono">
+            <Badge variant="secondary" className="font-mono border-2 border-gray-900">
               {formatDuration(duration)}
             </Badge>
           </div>
@@ -164,7 +173,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
                   type="color"
                   value={colorFrom}
                   onChange={e => onColorFromChange(e.target.value)}
-                  className="h-10 w-20 rounded border cursor-pointer"
+                  className="h-10 w-20 rounded border-2 border-gray-900 cursor-pointer"
                 />
                 <span className="text-sm font-mono text-muted-foreground">
                   {colorFrom}
@@ -180,7 +189,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
                   type="color"
                   value={colorTo}
                   onChange={e => onColorToChange(e.target.value)}
-                  className="h-10 w-20 rounded border cursor-pointer"
+                  className="h-10 w-20 rounded border-2 border-gray-900 cursor-pointer"
                 />
                 <span className="text-sm font-mono text-muted-foreground">
                   {colorTo}
@@ -189,15 +198,70 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
             </div>
             
             <div className="flex items-center justify-between">
-              <Label htmlFor="use-gradient-wave" className="cursor-pointer">
-                Enable Wave Gradient
-              </Label>
-              <Switch
-                id="use-gradient-wave"
-                checked={useGradientWave}
-                onCheckedChange={onUseGradientWaveChange}
-              />
+              <Label className="cursor-pointer">Wave Gradient</Label>
+              <Button
+                type="button"
+                variant={useGradientWave ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onUseGradientWaveChange(!useGradientWave)}
+                className={useGradientWave ? 'bg-indigo-600 text-white' : ''}
+              >
+                <span className="mr-1">🌊</span>
+                {useGradientWave ? 'On' : 'Off'}
+              </Button>
             </div>
+
+            {useGradientWave && (
+              <div className="mt-3 space-y-4 rounded-lg border-2 border-gray-900 p-3 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Wave Frequency</Label>
+                  <Badge variant="outline" className="font-mono">{waveFrequency.toFixed(1)}x</Badge>
+                </div>
+                <Slider
+                  value={[waveFrequency]}
+                  onValueChange={(v) => onWaveFrequencyChange(Number(v[0]))}
+                  min={0.5}
+                  max={3.0}
+                  step={0.1}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Fewer waves</span>
+                  <span>More waves</span>
+                </div>
+
+                <div className="flex items-center justify-between mt-4">
+                  <Label className="text-sm font-medium">Band Width</Label>
+                  <Badge variant="outline" className="font-mono">{Math.round(waveBandWidth * 100)}%</Badge>
+                </div>
+                <Slider
+                  value={[waveBandWidth]}
+                  onValueChange={(v) => onWaveBandWidthChange(Number(v[0]))}
+                  min={0.1}
+                  max={0.6}
+                  step={0.01}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Narrow</span>
+                  <span>Wide</span>
+                </div>
+
+                <div className="flex items-center justify-between mt-4">
+                  <Label className="text-sm font-medium">Glint Speed</Label>
+                  <Badge variant="outline" className="font-mono">{glintSpeed.toFixed(4)}</Badge>
+                </div>
+                <Slider
+                  value={[glintSpeed]}
+                  onValueChange={(v) => onGlintSpeedChange(Number(v[0]))}
+                  min={0.0001}
+                  max={1.0}
+                  step={0.0001}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Very slow</span>
+                  <span>Fast</span>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
         
@@ -250,9 +314,11 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = ({
         </Button>
         
         {disabled && (
-          <p className="text-sm text-amber-600 text-center">
-            Please upload an Excalidraw file first
-          </p>
+          <div className="flex justify-center">
+            <Badge variant="outline" className="px-2 py-1 text-[12px]">
+              Please upload an Excalidraw file first
+            </Badge>
+          </div>
         )}
       </div>
     </Card>

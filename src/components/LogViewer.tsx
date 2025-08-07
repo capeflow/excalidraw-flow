@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { logger, type LogEntry, type LogLevel } from '@/lib/logger';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Download, Play, Pause, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -125,7 +125,7 @@ export const LogViewer: React.FC = () => {
               level: value === 'all' ? undefined : value as LogLevel 
             }))}
           >
-            <SelectTrigger className="w-[120px]" aria-label="Filter logs by level">
+            <SelectTrigger className="w-[160px]" aria-label="Filter logs by level">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -144,20 +144,16 @@ export const LogViewer: React.FC = () => {
             aria-label="Search logs"
           />
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="autoscroll"
               checked={autoScroll}
-              onChange={(e) => setAutoScroll(e.target.checked)}
-              className="rounded"
+              onCheckedChange={(v) => setAutoScroll(!!v)}
               aria-describedby="autoscroll-help"
             />
             <label htmlFor="autoscroll" className="text-sm text-muted-foreground cursor-pointer">
               Auto-scroll
             </label>
-            <span id="autoscroll-help" className="sr-only">
-              Automatically scroll to show new log entries
-            </span>
+            <span id="autoscroll-help" className="sr-only">Automatically scroll to new logs</span>
           </div>
         </div>
       </div>
@@ -175,14 +171,14 @@ export const LogViewer: React.FC = () => {
                   <div
                     key={log.id}
                     className={cn(
-                      "flex items-start gap-2 p-2 rounded hover:bg-muted/50 transition-colors",
+                      "flex items-start gap-3 p-2 rounded-md hover:bg-gray-100 transition-colors",
                       log.level === 'error' && "bg-red-50/50",
                       log.level === 'warn' && "bg-yellow-50/50"
                     )}
                     role="log"
                     aria-label={`${log.level} log entry`}
                   >
-                    <span className="text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    <span className="text-gray-500 whitespace-nowrap flex-shrink-0 tabular-nums">
                       {formatTimestamp(new Date(log.timestamp))}
                     </span>
                     <Badge 
@@ -204,8 +200,8 @@ export const LogViewer: React.FC = () => {
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground text-xs">
                           Data
                         </summary>
-                        <div className="absolute right-0 mt-1 z-10 bg-white border rounded shadow-lg max-w-md">
-                          <pre className="p-2 bg-muted rounded text-[10px] overflow-auto max-h-40 whitespace-pre-wrap">
+                        <div className="absolute right-0 mt-1 z-10 bg-white border-2 border-gray-900 rounded-md shadow-[4px_4px_0_rgba(0,0,0,0.2)] max-w-md">
+                          <pre className="p-2 bg-gray-50 rounded text-[10px] overflow-auto max-h-40 whitespace-pre-wrap">
                             {JSON.stringify(log.data, null, 2)}
                           </pre>
                         </div>

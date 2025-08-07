@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Lyrics Learning - Pinyin & Translations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-sidebar: rgba(255, 255, 255, 0.8);
+            --text-primary: #000;
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --fold-color: rgba(0, 0, 0, 0.08);
+            --paper-bg: #fff;
+            --paper-edge: rgba(0, 0, 0, 0.04);
+        }
+
+        body.dark-mode {
+            --bg-primary: #000000;
+            --bg-secondary: #000000;
+            --bg-sidebar: rgba(0, 0, 0, 0.9);
+            --text-primary: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --fold-color: rgba(255, 255, 255, 0.05);
+            --paper-bg: #000000;
+            --paper-edge: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            transition: background 0.3s ease;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: -4px 0 20px var(--shadow-color);
+            transition: all 0.3s ease;
+        }
+
+        .slider-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            /* 7 slides */
+            height: 700vh;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+        }
+        
+        /* Origami-inspired geometric patterns */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(30deg, transparent 40%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.02) 60%, transparent 60%),
+                linear-gradient(60deg, transparent 40%, rgba(255,255,255,0.01) 40%, rgba(255,255,255,0.01) 60%, transparent 60%),
+                linear-gradient(90deg, transparent 40%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0.02) 60%, transparent 60%);
+            background-size: 100px 100px, 150px 150px, 200px 200px;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.5;
+        }
+        
+        body.dark-mode .slide::before {
+            background-image: 
+                linear-gradient(30deg, transparent 40%, rgba(255,255,255,0.01) 40%, rgba(255,255,255,0.01) 60%, transparent 60%),
+                linear-gradient(60deg, transparent 40%, rgba(255,255,255,0.005) 40%, rgba(255,255,255,0.005) 60%, transparent 60%),
+                linear-gradient(90deg, transparent 40%, rgba(255,255,255,0.01) 40%, rgba(255,255,255,0.01) 60%, transparent 60%);
+        }
+        
+        .origami-fold {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--fold-color), transparent);
+            top: 33%;
+            transform: rotate(-2deg);
+            z-index: 1;
+        }
+        
+        .origami-fold:nth-child(2) {
+            top: 66%;
+            transform: rotate(1deg);
+        }
+
+        .sidebar-header {
+            padding: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-info {
+            margin-bottom: 8px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .sidebar-navigation {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(to top, var(--bg-sidebar), transparent);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Dark mode toggle styles */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--border-color);
+            border-radius: 26px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: #667eea;
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .nav-arrow {
+            width: 44px;
+            height: 44px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-arrow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 40%, var(--fold-color) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-arrow:hover {
+            background: var(--bg-primary);
+            border-color: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        .nav-arrow:hover::before {
+            transform: translateX(100%);
+        }
+
+        .nav-arrow.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .slide-content {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 40px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        .lyrics-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        
+        .lyrics-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .lyrics-wrapper::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .lyrics-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+        
+        .lyrics-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .info-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .info-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: scale(1.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 30px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .line-indicator {
+            position: fixed;
+            left: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 200px;
+            justify-content: center;
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+        }
+        
+        .line-item {
+            width: 40px;
+            height: 2px;
+            background: var(--text-secondary);
+            border-radius: 1px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            position: relative;
+            transform-origin: left center;
+        }
+        
+        .line-item.active {
+            width: 60px;
+            background: var(--text-primary);
+            height: 3px;
+        }
+        
+        .line-item.near {
+            width: 50px;
+            background: var(--text-secondary);
+            opacity: 0.7;
+        }
+        
+        .line-item:hover {
+            width: 55px;
+            background: var(--text-primary);
+            opacity: 0.8;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .tone-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tone-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .tone-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .tone-1 { 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .tone-2 { 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .tone-3 { 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .tone-4 { 
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .tone-neutral { 
+            color: var(--text-primary);
+            font-weight: 700;
+                }
+
+        .dot-1 { background-color: #e74c3c; }
+        .dot-2 { background-color: #ffd700; }
+        .dot-3 { background-color: #27ae60; }
+        .dot-4 { background-color: #3498db; }
+        .dot-neutral { background-color: #95a5a6; }
+
+        .lyrics-section {
+            margin-bottom: 40px;
+        }
+
+        .song-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .lyrics-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        /* Special styling for title slide */
+        #lyricsContainer1 {
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #lyricsContainer1 .lyrics-line {
+            background: transparent;
+            box-shadow: none;
+            border: none;
+        }
+        
+        #lyricsContainer1 .character-group {
+            min-width: 120px;
+            padding: 24px 32px;
+        }
+        
+        #lyricsContainer1 .hanzi {
+            font-size: 48px;
+        }
+        
+        #lyricsContainer1 .pinyin {
+            font-size: 18px;
+        }
+        
+        #lyricsContainer1 .english {
+            font-size: 14px;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .lyrics-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 24px 32px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Dark-mode: lyrics panels should blend with black background */
+        body.dark-mode .lyrics-line {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .lyrics-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.06), transparent);
+        }
+
+        .character-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+            padding: 16px 20px 20px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+            overflow: hidden;
+            
+            /* Rounded corners for glass aesthetic */
+            border-radius: 8px;
+            
+            /* Glass edge */
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Tone-based shadows - Light mode */
+        .tone-bg-1 {
+            box-shadow: 0 4px 20px rgba(231, 76, 60, 0.15);
+        }
+        
+        .tone-bg-2 {
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15);
+        }
+        
+        .tone-bg-3 {
+            box-shadow: 0 4px 20px rgba(39, 174, 96, 0.15);
+        }
+        
+        .tone-bg-4 {
+            box-shadow: 0 4px 20px rgba(52, 152, 219, 0.15);
+        }
+        
+        .tone-bg-neutral {
+            box-shadow: 0 4px 20px rgba(149, 165, 166, 0.1);
+        }
+        
+        /* Dark mode glowing shadows */
+        body.dark-mode .tone-bg-1 {
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.3);
+        }
+        
+        body.dark-mode .tone-bg-2 {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        body.dark-mode .tone-bg-3 {
+            box-shadow: 0 0 30px rgba(39, 174, 96, 0.3);
+        }
+        
+        body.dark-mode .tone-bg-4 {
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        body.dark-mode .tone-bg-neutral {
+            box-shadow: 0 0 30px rgba(149, 165, 166, 0.2);
+        }
+
+        /* Glass base */
+        .character-group::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: -1;
+        }
+
+        /* Dark mode glass adjustments */
+        body.dark-mode .character-group {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode .character-group::before {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Tone color bar at top */
+        .character-group .tone-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 6;
+            transition: all 0.3s ease;
+            opacity: 1;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .character-group:hover .tone-bar {
+            height: 4px;
+        }
+        
+        .tone-bg-1 .tone-bar {
+            background: linear-gradient(90deg, #e74c3c, #d32f2f);
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+        }
+        
+        .tone-bg-2 .tone-bar {
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .tone-bg-3 .tone-bar {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+        }
+        
+        .tone-bg-4 .tone-bar {
+            background: linear-gradient(90deg, #3498db, #5dade2);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+        
+        .tone-bg-neutral .tone-bar {
+            background: linear-gradient(90deg, #95a5a6, #bdc3c7);
+            box-shadow: 0 2px 8px rgba(149, 165, 166, 0.3);
+        }
+
+        /* Subtle fold lines for glass effect */
+        .character-group .fold-horizontal {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            top: 40%;
+            background: rgba(255, 255, 255, 0.05);
+            transform: rotate(-0.5deg);
+            z-index: 2;
+        }
+
+        .character-group .fold-vertical {
+            position: absolute;
+            top: 10%;
+            bottom: 10%;
+            width: 1px;
+            left: 65%;
+            background: rgba(255, 255, 255, 0.05);
+            transform: rotate(0.3deg);
+            z-index: 2;
+        }
+
+        /* Dark mode fold adjustments */
+        body.dark-mode .character-group .fold-horizontal,
+        body.dark-mode .character-group .fold-vertical {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Subtle glass texture */
+        .character-group .paper-texture {
+            position: absolute;
+            inset: 0;
+            opacity: 0.1;
+            background-image: 
+                repeating-linear-gradient(
+                    100deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.02) 2px,
+                    rgba(255, 255, 255, 0.02) 3px
+                );
+            background-size: 4px 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Subtle corner fold for glass */
+        .character-group .corner-fold {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 10px 10px 0;
+            border-color: transparent rgba(255, 255, 255, 0.08) transparent transparent;
+            z-index: 4;
+        }
+
+        .character-group:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* Subtle hover enhancement for tone shadows */
+        .tone-bg-1:hover {
+            box-shadow: 0 4px 24px rgba(231, 76, 60, 0.2);
+        }
+        
+        .tone-bg-2:hover {
+            box-shadow: 0 4px 24px rgba(255, 215, 0, 0.2);
+        }
+        
+        .tone-bg-3:hover {
+            box-shadow: 0 4px 24px rgba(39, 174, 96, 0.2);
+        }
+        
+        .tone-bg-4:hover {
+            box-shadow: 0 4px 24px rgba(52, 152, 219, 0.2);
+        }
+        
+        .tone-bg-neutral:hover {
+            box-shadow: 0 4px 24px rgba(149, 165, 166, 0.15);
+        }
+        
+        /* Dark mode hover glows */
+        body.dark-mode .tone-bg-1:hover {
+            box-shadow: 0 0 35px rgba(231, 76, 60, 0.4);
+        }
+        
+        body.dark-mode .tone-bg-2:hover {
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.4);
+        }
+        
+        body.dark-mode .tone-bg-3:hover {
+            box-shadow: 0 0 35px rgba(39, 174, 96, 0.4);
+        }
+        
+        body.dark-mode .tone-bg-4:hover {
+            box-shadow: 0 0 35px rgba(52, 152, 219, 0.4);
+        }
+        
+        body.dark-mode .tone-bg-neutral:hover {
+            box-shadow: 0 0 35px rgba(149, 165, 166, 0.3);
+        }
+        
+        /* Highlighted card state */
+        .character-group.highlighted {
+            transform: translateY(-3px) scale(1.05);
+            z-index: 10;
+            position: relative;
+        }
+        
+        .character-group.highlighted::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border: 2px solid var(--text-primary);
+            border-radius: 10px;
+            opacity: 0.6;
+            pointer-events: none;
+            animation: highlightPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes highlightPulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
+        
+        /* Enhanced shadows for highlighted cards */
+        .tone-bg-1.highlighted {
+            box-shadow: 0 8px 30px rgba(231, 76, 60, 0.3);
+        }
+        
+        .tone-bg-2.highlighted {
+            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .tone-bg-3.highlighted {
+            box-shadow: 0 8px 30px rgba(39, 174, 96, 0.3);
+        }
+        
+        .tone-bg-4.highlighted {
+            box-shadow: 0 8px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .tone-bg-neutral.highlighted {
+            box-shadow: 0 8px 30px rgba(149, 165, 166, 0.25);
+        }
+        
+        /* Dark mode highlighted glows */
+        body.dark-mode .tone-bg-1.highlighted {
+            box-shadow: 0 0 45px rgba(231, 76, 60, 0.5);
+        }
+        
+        body.dark-mode .tone-bg-2.highlighted {
+            box-shadow: 0 0 45px rgba(255, 215, 0, 0.5);
+        }
+        
+        body.dark-mode .tone-bg-3.highlighted {
+            box-shadow: 0 0 45px rgba(39, 174, 96, 0.5);
+        }
+        
+        body.dark-mode .tone-bg-4.highlighted {
+            box-shadow: 0 0 45px rgba(52, 152, 219, 0.5);
+        }
+        
+        body.dark-mode .tone-bg-neutral.highlighted {
+            box-shadow: 0 0 45px rgba(149, 165, 166, 0.4);
+        }
+
+        /* Origami triangle styles */
+        .origami-triangle {
+            transition: opacity 0.3s ease;
+            mix-blend-mode: multiply;
+        }
+
+        body.dark-mode .origami-triangle {
+            mix-blend-mode: screen;
+        }
+
+        .pinyin {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+            letter-spacing: 0.5px;
+            z-index: 5;
+            position: relative;
+        }
+
+        .hanzi {
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            line-height: 1.2;
+            z-index: 5;
+            position: relative;
+        }
+
+        .english {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-style: italic;
+            letter-spacing: 0.3px;
+            z-index: 5;
+            position: relative;
+        }
+
+        .add-lyrics-section {
+            display: none;
+        }
+
+        .instructions {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .tone-legend {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .lyrics-line {
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .navigation {
+                right: 15px;
+                gap: 15px;
+            }
+            
+            .nav-arrow {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .slide-content {
+                padding: 0 20px;
+            }
+            
+            .slide-header h2 {
+                font-size: 2.5em;
+            }
+            
+            .slide-header p {
+                font-size: 1em;
+            }
+            
+            .character-group {
+                min-width: 50px;
+                padding: 12px;
+            }
+            
+            .character-group .corner-fold {
+                border-width: 0 8px 8px 0;
+            }
+            
+            .hanzi {
+                font-size: 1.8em;
+            }
+            
+            .pinyin {
+                font-size: 0.9em;
+            }
+            
+            .english {
+                font-size: 0.75em;
+            }
+            
+            .info-button {
+                top: 20px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .modal-content {
+                padding: 30px;
+                margin: 20px;
+                max-width: calc(100vw - 40px);
+            }
+            
+            .line-indicator {
+                left: 20px;
+                gap: 3px;
+            }
+            
+            .line-item {
+                width: 35px;
+            }
+            
+            .line-item.active {
+                width: 50px;
+            }
+            
+            .sidebar {
+                width: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="line-indicator">
+                <div class="line-item active" onclick="showSlide(0)"></div>
+                <div class="line-item" onclick="showSlide(1)"></div>
+                <div class="line-item" onclick="showSlide(2)"></div>
+                <div class="line-item" onclick="showSlide(3)"></div>
+                <div class="line-item" onclick="showSlide(4)"></div>
+                <div class="line-item" onclick="showSlide(5)"></div>
+                <div class="line-item" onclick="showSlide(6)"></div>
+            </div>
+
+        <div class="modal" id="infoModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeModal()">×</button>
+                <h2>🎵 Chinese Lyrics Learning</h2>
+                <p>Learn Chinese songs with pinyin, tones, and translations</p>
+                
+                <div class="tone-legend">
+                    <div class="tone-item">
+                        <div class="tone-dot dot-1"></div>
+                        <span>1st Tone (High) - Red Fire</span>
+                    </div>
+                    <div class="tone-item">
+                        <div class="tone-dot dot-2"></div>
+                        <span>2nd Tone (Rising) - Gold</span>
+                    </div>
+                    <div class="tone-item">
+                        <div class="tone-dot dot-3"></div>
+                        <span>3rd Tone (Low) - Green Vegetation</span>
+                    </div>
+                    <div class="tone-item">
+                        <div class="tone-dot dot-4"></div>
+                        <span>4th Tone (Falling) - Blue Water</span>
+                    </div>
+                    <div class="tone-item">
+                        <div class="tone-dot dot-neutral"></div>
+                        <span>Neutral Tone</span>
+                    </div>
+                </div>
+
+                <div class="instructions">
+                    <h3>📝 How to Use:</h3>
+                    <ul>
+                        <li>Each character shows pinyin (with tone colors), hanzi, and English translation</li>
+                        <li>Colors indicate tones: Red (1st), Orange (2nd), Green (3rd), Blue (4th), Gray (neutral)</li>
+                        <li>Swipe up/down or use arrow keys to navigate between song sections</li>
+                        <li>The lyrics are from "黃昏" (Dusk) - a melancholic love song</li>
+                        <li><strong>Keyboard shortcuts:</strong>
+                            <ul>
+                                <li>Up/Down arrows: Navigate between slides</li>
+                                <li>Left/Right arrows: Tab through individual character cards</li>
+                                <li>Escape: Clear card highlight or close this modal</li>
+                            </ul>
+                        </li>
+                        <li><strong>Touch gestures:</strong> Two-finger swipe up/down to navigate</li>
+                        <li><strong>Card navigation:</strong> Use left/right arrows to highlight individual characters. Navigation automatically moves to the next/previous page when reaching the edge</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+                    <div class="slider-container">
+                <div class="slider-wrapper" id="sliderWrapper">
+                    <!-- Slide 1 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer1" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                                    <!-- Slide 2 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer2" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer3" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer4" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer5" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 6 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer6" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 7 -->
+                    <div class="slide">
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer7" class="lyrics-container">
+                                    <!-- Content will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="section-info">
+                    <div class="section-label">Section</div>
+                    <div class="section-title" id="sectionTitle">Verse 1</div>
+                    <div class="section-subtitle" id="sectionSubtitle">First verse</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-navigation">
+                <div class="theme-toggle">
+                    <span class="toggle-label">Dark Mode</span>
+                    <label class="toggle-switch" for="darkModeToggle">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="nav-controls">
+                    <div class="nav-arrow" onclick="previousSlide()" id="upArrow">
+                        ↑
+                    </div>
+                    <div class="nav-arrow" onclick="nextSlide()" id="downArrow">
+                        ↓
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        let currentSlide = 0;
+        let currentLines = [null, null, null, null, null, null, null]; // Track current line for each slide
+        let currentCardIndex = -1; // -1 means no card is highlighted
+
+        // Geometric origami pattern generator
+        function generateOrigamiPattern() {
+            const patterns = [];
+            const numTriangles = 3 + Math.floor(Math.random() * 3); // 3-5 triangles
+            
+            for (let i = 0; i < numTriangles; i++) {
+                const x1 = Math.random() * 100;
+                const y1 = Math.random() * 100;
+                const x2 = x1 + (Math.random() * 40 - 20);
+                const y2 = y1 + (Math.random() * 40 - 20);
+                const x3 = x1 + (Math.random() * 40 - 20);
+                const y3 = y1 + (Math.random() * 40 - 20);
+                
+                const opacity = 0.01 + Math.random() * 0.03;
+                const isDark = Math.random() > 0.5;
+                
+                patterns.push({
+                    points: `${x1}% ${y1}%, ${x2}% ${y2}%, ${x3}% ${y3}%`,
+                    opacity: opacity,
+                    color: isDark ? 'rgba(0, 0, 0,' : 'rgba(255, 255, 255,'
+                });
+            }
+            
+            return patterns;
+        }
+
+        function createOrigamiElement(patterns) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.style.position = 'absolute';
+            svg.style.top = '0';
+            svg.style.left = '0';
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.pointerEvents = 'none';
+            svg.style.zIndex = '1';
+            
+            patterns.forEach((pattern, index) => {
+                const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                // Convert percentage points to SVG coordinates
+                const points = pattern.points.split(',').map(point => {
+                    const [x, y] = point.trim().replace('%', '').split(' ');
+                    return `${x},${y}`;
+                }).join(' ');
+                
+                polygon.setAttribute('points', points);
+                
+                // Adjust colors for dark mode
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                let fillColor = pattern.color;
+                if (isDarkMode && pattern.color.includes('rgba(0, 0, 0,')) {
+                    fillColor = 'rgba(255, 255, 255,';
+                } else if (!isDarkMode && pattern.color.includes('rgba(255, 255, 255,')) {
+                    fillColor = 'rgba(0, 0, 0,';
+                }
+                
+                polygon.setAttribute('fill', fillColor + pattern.opacity + ')');
+                polygon.setAttribute('class', 'origami-triangle');
+                svg.appendChild(polygon);
+            });
+            
+            return svg;
+        }
+
+        function getToneClass(pinyin) {
+            // Handle tone numbers
+            if (pinyin.includes('1') || pinyin.includes('ā') || pinyin.includes('ē') || pinyin.includes('ī') || pinyin.includes('ō') || pinyin.includes('ū') || pinyin.includes('ǖ')) {
+                return 'tone-1';
+            } else if (pinyin.includes('2') || pinyin.includes('á') || pinyin.includes('é') || pinyin.includes('í') || pinyin.includes('ó') || pinyin.includes('ú') || pinyin.includes('ǘ')) {
+                return 'tone-2';
+            } else if (pinyin.includes('3') || pinyin.includes('ǎ') || pinyin.includes('ě') || pinyin.includes('ǐ') || pinyin.includes('ǒ') || pinyin.includes('ǔ') || pinyin.includes('ǚ')) {
+                return 'tone-3';
+            } else if (pinyin.includes('4') || pinyin.includes('à') || pinyin.includes('è') || pinyin.includes('ì') || pinyin.includes('ò') || pinyin.includes('ù') || pinyin.includes('ǜ')) {
+                return 'tone-4';
+            } else {
+                return 'tone-neutral';
+            }
+        }
+
+        function getToneBgClass(pinyin) {
+            // Handle tone numbers
+            if (pinyin.includes('1') || pinyin.includes('ā') || pinyin.includes('ē') || pinyin.includes('ī') || pinyin.includes('ō') || pinyin.includes('ū') || pinyin.includes('ǖ')) {
+                return 'tone-bg-1';
+            } else if (pinyin.includes('2') || pinyin.includes('á') || pinyin.includes('é') || pinyin.includes('í') || pinyin.includes('ó') || pinyin.includes('ú') || pinyin.includes('ǘ')) {
+                return 'tone-bg-2';
+            } else if (pinyin.includes('3') || pinyin.includes('ǎ') || pinyin.includes('ě') || pinyin.includes('ǐ') || pinyin.includes('ǒ') || pinyin.includes('ǔ') || pinyin.includes('ǚ')) {
+                return 'tone-bg-3';
+            } else if (pinyin.includes('4') || pinyin.includes('à') || pinyin.includes('è') || pinyin.includes('ì') || pinyin.includes('ò') || pinyin.includes('ù') || pinyin.includes('ǜ')) {
+                return 'tone-bg-4';
+            } else {
+                return 'tone-bg-neutral';
+            }
+        }
+
+        function cleanPinyin(pinyin) {
+            return pinyin.replace(/[1234]/g, '');
+        }
+
+        /* ================================================
+           Dynamic Builder – splits lyric lines into pages
+           of MAX_LINES_PER_PAGE (3) and constructs slides
+           & indicators entirely from the config (sampleData)
+        ================================================= */
+
+        const MAX_CHARACTERS_PER_PAGE = 20; // Dynamic limit based on character count
+        const MAX_LINES_PER_PAGE = 3; // Hard limit on lines regardless of character count
+
+        function createCharacterGroup(char) {
+            const characterGroup = document.createElement('div');
+            const toneClass = getToneClass(char.pinyin);
+            const toneBgClass = getToneBgClass(char.pinyin);
+            characterGroup.className = `character-group ${toneBgClass}`;
+
+            const cleanedPinyin = cleanPinyin(char.pinyin);
+
+            // Origami pattern for subtle texture
+            const origamiPatterns = generateOrigamiPattern();
+            const origamiSVG = createOrigamiElement(origamiPatterns);
+
+            characterGroup.innerHTML = `
+                <div class="paper-texture"></div>
+                <div class="fold-horizontal"></div>
+                <div class="fold-vertical"></div>
+                <div class="corner-fold"></div>
+                <div class="pinyin ${toneClass}">${cleanedPinyin}</div>
+                <div class="hanzi">${char.hanzi}</div>
+                <div class="english">${char.english}</div>
+                <div class="tone-bar"></div>
+            `;
+
+            characterGroup.appendChild(origamiSVG);
+            return characterGroup;
+        }
+
+        function buildSlides(data) {
+            const sliderWrapper = document.getElementById('sliderWrapper');
+            const lineIndicator = document.querySelector('.line-indicator');
+
+            // Preserve original section meta for titles/subtitles
+            const baseSectionData = [...sectionData];
+
+            // Reset containers & trackers
+            sliderWrapper.innerHTML = '';
+            lineIndicator.innerHTML = '';
+            sectionData.length = 0;
+            currentLines.length = 0;
+
+            let slideIndex = 0;
+
+            data.forEach((slideLines, sectionIdx) => {
+                let lineIndex = 0;
+                
+                while (lineIndex < slideLines.length) {
+                    const pageLines = [];
+                    let currentCharCount = 0;
+                    let currentLineCount = 0;
+                    
+                    // Dynamically determine how many lines fit on this page
+                    while (lineIndex < slideLines.length && 
+                           currentLineCount < MAX_LINES_PER_PAGE) {
+                        
+                        const line = slideLines[lineIndex];
+                        const lineCharCount = line.length;
+                        
+                        // Check if adding this line would exceed character limit
+                        if (currentCharCount + lineCharCount > MAX_CHARACTERS_PER_PAGE && 
+                            pageLines.length > 0) {
+                            break; // Don't add this line, start new page
+                        }
+                        
+                        pageLines.push(line);
+                        currentCharCount += lineCharCount;
+                        currentLineCount++;
+                        lineIndex++;
+                    }
+
+                    // -------- Build slide skeleton --------
+                    const slide = document.createElement('div');
+                    slide.className = 'slide';
+                    slide.innerHTML = `
+                        <div class="origami-fold"></div>
+                        <div class="origami-fold"></div>
+                        <div class="slide-content">
+                            <div class="lyrics-wrapper">
+                                <div id="lyricsContainer${slideIndex}" class="lyrics-container"></div>
+                            </div>
+                        </div>`;
+
+                    sliderWrapper.appendChild(slide);
+
+                    // -------- Build lyric lines --------
+                    const container = document.getElementById(`lyricsContainer${slideIndex}`);
+                    pageLines.forEach(line => {
+                        const lyricsLine = document.createElement('div');
+                        lyricsLine.className = 'lyrics-line';
+                        container.appendChild(lyricsLine);
+
+                        line.forEach(char => {
+                            const cg = createCharacterGroup(char);
+                            lyricsLine.appendChild(cg);
+                        });
+                    });
+
+                    // -------- Update meta arrays --------
+                    const base = baseSectionData[sectionIdx] || { title: `Section ${sectionIdx+1}`, subtitle: '' };
+                    const totalPages = Math.ceil(slideLines.length / MAX_LINES_PER_PAGE);
+                    const currentPage = Math.floor((lineIndex - pageLines.length) / MAX_LINES_PER_PAGE) + 1;
+                    const pageLabel = (totalPages > 1)
+                        ? `${base.subtitle || ''} ${currentPage}`.trim()
+                        : base.subtitle;
+                    sectionData.push({ title: base.title, subtitle: pageLabel });
+
+                    currentLines.push(null); // maintain same length for potential future edits
+
+                    // -------- Indicator dot --------
+                    const dot = document.createElement('div');
+                    dot.className = 'line-item' + (slideIndex === 0 ? ' active' : '');
+                    dot.onclick = () => showSlide(slideIndex);
+                    lineIndicator.appendChild(dot);
+
+                    // Mark near dot for visual cue
+                    if (slideIndex === 1) dot.classList.add('near');
+
+                    slideIndex++;
+                }
+            });
+
+            // Adjust wrapper height based on total slides
+            sliderWrapper.style.height = `${slideIndex * 100}vh`;
+        }
+
+        const sectionData = [
+            { title: '黃昏', subtitle: 'Title' },
+            { title: '第一段', subtitle: 'Opening verse' },
+            { title: '续', subtitle: 'Continuation' },
+            { title: '第二段', subtitle: 'Second verse' },
+            { title: '副歌一', subtitle: 'Chorus part 1' },
+            { title: '副歌二', subtitle: 'Chorus part 2' },
+            { title: '尾声', subtitle: 'Final section' }
+        ];
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            
+            // Regenerate origami patterns for dark mode
+            const allTriangles = document.querySelectorAll('.origami-triangle');
+            allTriangles.forEach(triangle => {
+                const currentFill = triangle.getAttribute('fill');
+                if (document.body.classList.contains('dark-mode')) {
+                    // Convert light patterns to dark
+                    if (currentFill.includes('rgba(0, 0, 0,')) {
+                        triangle.setAttribute('fill', currentFill.replace('rgba(0, 0, 0,', 'rgba(255, 255, 255,'));
+                    }
+                } else {
+                    // Convert dark patterns to light
+                    if (currentFill.includes('rgba(255, 255, 255,')) {
+                        triangle.setAttribute('fill', currentFill.replace('rgba(255, 255, 255,', 'rgba(0, 0, 0,'));
+                    }
+                }
+            });
+        }
+
+        function showSlide(slideIndex) {
+            const slider = document.getElementById('sliderWrapper');
+            const upArrow = document.getElementById('upArrow');
+            const downArrow = document.getElementById('downArrow');
+            const lines = document.querySelectorAll('.line-item');
+            const sectionTitle = document.getElementById('sectionTitle');
+            const sectionSubtitle = document.getElementById('sectionSubtitle');
+            
+            // Clear any existing card highlights
+            clearCardHighlight();
+            
+            // Update slider position for vertical movement
+            slider.style.transform = `translateY(-${slideIndex * 100}vh)`;
+            
+            // Update navigation arrows
+            upArrow.classList.toggle('disabled', slideIndex === 0);
+            downArrow.classList.toggle('disabled', slideIndex === sectionData.length - 1);
+            
+            // Update line indicators
+            lines.forEach((line, index) => {
+                line.classList.remove('active', 'near');
+                if (index === slideIndex) {
+                    line.classList.add('active');
+                } else if (Math.abs(index - slideIndex) === 1) {
+                    line.classList.add('near');
+                }
+            });
+            
+            // Update section info in sidebar
+            sectionTitle.textContent = sectionData[slideIndex].title;
+            sectionSubtitle.textContent = sectionData[slideIndex].subtitle;
+            
+            currentSlide = slideIndex;
+        }
+
+        function nextSlide() {
+            if (currentSlide < sectionData.length - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        function openModal() {
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        function addCharacter(slideNumber) {
+            const pinyin = document.getElementById(`pinyinInput${slideNumber}`).value.trim();
+            const hanzi = document.getElementById(`hanziInput${slideNumber}`).value.trim();
+            const english = document.getElementById(`englishInput${slideNumber}`).value.trim();
+
+            if (!pinyin || !hanzi || !english) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            if (!currentLines[slideNumber - 1]) {
+                newLine(slideNumber);
+            }
+
+            const characterGroup = document.createElement('div');
+            const toneClass = getToneClass(pinyin);
+            const toneBgClass = getToneBgClass(pinyin);
+            characterGroup.className = `character-group ${toneBgClass}`;
+
+            const cleanedPinyin = cleanPinyin(pinyin);
+
+            // Generate unique origami pattern
+            const origamiPatterns = generateOrigamiPattern();
+            const origamiSVG = createOrigamiElement(origamiPatterns);
+
+            characterGroup.innerHTML = `
+                <div class="paper-texture"></div>
+                <div class="fold-horizontal"></div>
+                <div class="fold-vertical"></div>
+                <div class="corner-fold"></div>
+                <div class="pinyin ${toneClass}">${cleanedPinyin}</div>
+                <div class="hanzi">${hanzi}</div>
+                <div class="english">${english}</div>
+                <div class="tone-bar"></div>
+            `;
+
+            // Add the origami pattern
+            characterGroup.appendChild(origamiSVG);
+
+            currentLines[slideNumber - 1].appendChild(characterGroup);
+
+            // Clear inputs
+            document.getElementById(`pinyinInput${slideNumber}`).value = '';
+            document.getElementById(`hanziInput${slideNumber}`).value = '';
+            document.getElementById(`englishInput${slideNumber}`).value = '';
+        }
+
+        function newLine(slideNumber) {
+            const container = document.getElementById(`lyricsContainer${slideNumber}`);
+            currentLines[slideNumber - 1] = document.createElement('div');
+            currentLines[slideNumber - 1].className = 'lyrics-line';
+            container.appendChild(currentLines[slideNumber - 1]);
+        }
+
+        // 黃昏 (Dusk) - Chinese song lyrics - Global config
+        const sampleData = [
+                // Slide 1 - Title
+                [
+                    [
+                        { pinyin: 'huáng2', hanzi: '黃', english: 'yellow' },
+                        { pinyin: 'hūn1', hanzi: '昏', english: 'dusk' }
+                    ]
+                ],
+                // Slide 2 - Opening verses
+                [
+                    [
+                        { pinyin: 'guò4', hanzi: '过', english: 'pass' },
+                        { pinyin: 'wán2', hanzi: '完', english: 'finish' },
+                        { pinyin: 'zhěng3', hanzi: '整', english: 'entire' },
+                        { pinyin: 'gè4', hanzi: '个', english: 'classifier' },
+                        { pinyin: 'xià4', hanzi: '夏', english: 'summer' },
+                        { pinyin: 'tiān1', hanzi: '天', english: 'day' }
+                    ],
+                    [
+                        { pinyin: 'yōu1', hanzi: '忧', english: 'worry' },
+                        { pinyin: 'shāng1', hanzi: '伤', english: 'hurt' },
+                        { pinyin: 'bìng4', hanzi: '并', english: 'and' },
+                        { pinyin: 'méi2', hanzi: '没', english: 'not' },
+                        { pinyin: 'yǒu3', hanzi: '有', english: 'have' },
+                        { pinyin: 'hǎo3', hanzi: '好', english: 'good' },
+                        { pinyin: 'yì1', hanzi: '一', english: 'one' },
+                        { pinyin: 'xiē1', hanzi: '些', english: 'some' }
+                    ]
+                ],
+                // Slide 3 - Continuation
+                [
+                    [
+                        { pinyin: 'kāi1', hanzi: '开', english: 'drive' },
+                        { pinyin: 'chē1', hanzi: '车', english: 'car' },
+                        { pinyin: 'xíng2', hanzi: '行', english: 'travel' },
+                        { pinyin: 'shǐ3', hanzi: '驶', english: 'drive' },
+                        { pinyin: 'zài4', hanzi: '在', english: 'at' },
+                        { pinyin: 'gōng1', hanzi: '公', english: 'public' },
+                        { pinyin: 'lù4', hanzi: '路', english: 'road' },
+                        { pinyin: 'wú2', hanzi: '无', english: 'no' },
+                        { pinyin: 'jì4', hanzi: '际', english: 'edge' },
+                        { pinyin: 'wú2', hanzi: '无', english: 'no' },
+                        { pinyin: 'biān1', hanzi: '边', english: 'border' }
+                    ],
+                    [
+                        { pinyin: 'yǒu3', hanzi: '有', english: 'have' },
+                        { pinyin: 'lí2', hanzi: '离', english: 'leave' },
+                        { pinyin: 'kāi1', hanzi: '开', english: 'open' },
+                        { pinyin: 'zì4', hanzi: '自', english: 'self' },
+                        { pinyin: 'jǐ3', hanzi: '己', english: 'self' },
+                        { pinyin: 'de', hanzi: '的', english: 'particle' },
+                        { pinyin: 'gǎn3', hanzi: '感', english: 'feel' },
+                        { pinyin: 'jué2', hanzi: '觉', english: 'sense' }
+                    ]
+                ],
+                // Slide 4 - Second verse
+                [
+                    [
+                        { pinyin: 'chàng4', hanzi: '唱', english: 'sing' },
+                        { pinyin: 'bù4', hanzi: '不', english: 'not' },
+                        { pinyin: 'wán2', hanzi: '完', english: 'finish' },
+                        { pinyin: 'yì1', hanzi: '一', english: 'one' },
+                        { pinyin: 'shǒu3', hanzi: '首', english: 'classifier' },
+                        { pinyin: 'gē1', hanzi: '歌', english: 'song' }
+                    ],
+                    [
+                        { pinyin: 'pí2', hanzi: '疲', english: 'tired' },
+                        { pinyin: 'juàn4', hanzi: '倦', english: 'weary' },
+                        { pinyin: 'hái2', hanzi: '还', english: 'still' },
+                        { pinyin: 'shèng4', hanzi: '剩', english: 'remain' },
+                        { pinyin: 'xià4', hanzi: '下', english: 'below' },
+                        { pinyin: 'hēi1', hanzi: '黑', english: 'black' },
+                        { pinyin: 'yǎn3', hanzi: '眼', english: 'eye' },
+                        { pinyin: 'quān1', hanzi: '圈', english: 'circle' }
+                    ]
+                ],
+                // Slide 5 - Chorus part 1
+                [
+                    [
+                        { pinyin: 'yī1', hanzi: '依', english: 'depend' },
+                        { pinyin: 'rán2', hanzi: '然', english: 'still' },
+                        { pinyin: 'jì4', hanzi: '记', english: 'remember' },
+                        { pinyin: 'de', hanzi: '得', english: 'particle' },
+                        { pinyin: 'cóng2', hanzi: '从', english: 'from' },
+                        { pinyin: 'nǐ3', hanzi: '你', english: 'you' },
+                        { pinyin: 'kǒu3', hanzi: '口', english: 'mouth' },
+                        { pinyin: 'zhōng1', hanzi: '中', english: 'middle' },
+                        { pinyin: 'shuō1', hanzi: '说', english: 'say' },
+                        { pinyin: 'chū1', hanzi: '出', english: 'out' },
+                        { pinyin: 'zài4', hanzi: '再', english: 'again' },
+                        { pinyin: 'jiàn4', hanzi: '见', english: 'see' }
+                    ],
+                    [
+                        { pinyin: 'jiān1', hanzi: '坚', english: 'firm' },
+                        { pinyin: 'jué2', hanzi: '决', english: 'decide' },
+                        { pinyin: 'rú2', hanzi: '如', english: 'like' },
+                        { pinyin: 'tiě3', hanzi: '铁', english: 'iron' }
+                    ]
+                ],
+                // Slide 6 - Chorus part 2
+                [
+                    [
+                        { pinyin: 'huáng2', hanzi: '黄', english: 'yellow' },
+                        { pinyin: 'hūn1', hanzi: '昏', english: 'dusk' },
+                        { pinyin: 'de', hanzi: '的', english: 'particle' },
+                        { pinyin: 'dì4', hanzi: '地', english: 'earth' },
+                        { pinyin: 'píng2', hanzi: '平', english: 'flat' },
+                        { pinyin: 'xiàn4', hanzi: '线', english: 'line' }
+                    ],
+                    [
+                        { pinyin: 'huà4', hanzi: '划', english: 'draw' },
+                        { pinyin: 'chū1', hanzi: '出', english: 'out' },
+                        { pinyin: 'yí1', hanzi: '一', english: 'one' },
+                        { pinyin: 'jù4', hanzi: '句', english: 'sentence' },
+                        { pinyin: 'lí2', hanzi: '离', english: 'leave' },
+                        { pinyin: 'bié2', hanzi: '别', english: 'part' }
+                    ],
+                    [
+                        { pinyin: 'ài4', hanzi: '爱', english: 'love' },
+                        { pinyin: 'qíng2', hanzi: '情', english: 'feeling' },
+                        { pinyin: 'jìn4', hanzi: '进', english: 'enter' },
+                        { pinyin: 'rù4', hanzi: '入', english: 'into' },
+                        { pinyin: 'yǒng3', hanzi: '永', english: 'forever' },
+                        { pinyin: 'yè4', hanzi: '夜', english: 'night' }
+                    ]
+                ]
+            ];
+
+            /* --------------------------------------------------
+               Add missing line to Slide 5 and full ending slide
+            -------------------------------------------------- */
+
+            // Extra line for Slide 5 (昏暗中有种烈日灼身的错觉)
+            sampleData[4].push([
+                { pinyin: 'hūn1', hanzi: '昏', english: 'dusk' },
+                { pinyin: 'àn4', hanzi: '暗', english: 'dark' },
+                { pinyin: 'zhōng1', hanzi: '中', english: 'middle' },
+                { pinyin: 'yǒu3', hanzi: '有', english: 'have' },
+                { pinyin: 'zhǒng3', hanzi: '种', english: 'kind' },
+                { pinyin: 'liè4', hanzi: '烈', english: 'fiery' },
+                { pinyin: 'rì4', hanzi: '日', english: 'sun' },
+                { pinyin: 'zhuó2', hanzi: '灼', english: 'burn' },
+                { pinyin: 'shēn1', hanzi: '身', english: 'body' },
+                { pinyin: 'de', hanzi: '的', english: 'particle' },
+                { pinyin: 'cuò4', hanzi: '错', english: 'wrong' },
+                { pinyin: 'jué2', hanzi: '觉', english: 'sense' }
+            ]);
+
+            // Slide 7 – Ending lyrics
+            sampleData.push([
+                // 依然记得从你眼中滑落的泪
+                [
+                    { pinyin: 'yī1', hanzi: '依', english: 'depend' },
+                    { pinyin: 'rán2', hanzi: '然', english: 'still' },
+                    { pinyin: 'jì4', hanzi: '记', english: 'remember' },
+                    { pinyin: 'de', hanzi: '得', english: 'particle' },
+                    { pinyin: 'cóng2', hanzi: '从', english: 'from' },
+                    { pinyin: 'nǐ3', hanzi: '你', english: 'you' },
+                    { pinyin: 'yǎn3', hanzi: '眼', english: 'eye' },
+                    { pinyin: 'zhōng1', hanzi: '中', english: 'middle' },
+                    { pinyin: 'huá2', hanzi: '滑', english: 'slide' },
+                    { pinyin: 'luò4', hanzi: '落', english: 'fall' },
+                    { pinyin: 'de', hanzi: '的', english: 'particle' },
+                    { pinyin: 'lèi4', hanzi: '泪', english: 'tear' }
+                ],
+                // 伤心欲绝
+                [
+                    { pinyin: 'shāng1', hanzi: '伤', english: 'hurt' },
+                    { pinyin: 'xīn1', hanzi: '心', english: 'heart' },
+                    { pinyin: 'yù4', hanzi: '欲', english: 'desire' },
+                    { pinyin: 'jué2', hanzi: '绝', english: 'end' }
+                ],
+                // 混乱中有种热泪烧伤的错觉
+                [
+                    { pinyin: 'hùn4', hanzi: '混', english: 'mix' },
+                    { pinyin: 'luàn4', hanzi: '乱', english: 'chaos' },
+                    { pinyin: 'zhōng1', hanzi: '中', english: 'middle' },
+                    { pinyin: 'yǒu3', hanzi: '有', english: 'have' },
+                    { pinyin: 'zhǒng3', hanzi: '种', english: 'kind' },
+                    { pinyin: 'rè4', hanzi: '热', english: 'hot' },
+                    { pinyin: 'lèi4', hanzi: '泪', english: 'tear' },
+                    { pinyin: 'shāo1', hanzi: '烧', english: 'burn' },
+                    { pinyin: 'shāng1', hanzi: '伤', english: 'hurt' },
+                    { pinyin: 'de', hanzi: '的', english: 'particle' },
+                    { pinyin: 'cuò4', hanzi: '错', english: 'wrong' },
+                    { pinyin: 'jué2', hanzi: '觉', english: 'feel' }
+                ],
+                // 黄昏的地平线
+                [
+                    { pinyin: 'huáng2', hanzi: '黄', english: 'yellow' },
+                    { pinyin: 'hūn1', hanzi: '昏', english: 'dusk' },
+                    { pinyin: 'de', hanzi: '的', english: 'particle' },
+                    { pinyin: 'dì4', hanzi: '地', english: 'ground' },
+                    { pinyin: 'píng2', hanzi: '平', english: 'flat' },
+                    { pinyin: 'xiàn4', hanzi: '线', english: 'line' }
+                ],
+                // 割断幸福喜悦
+                [
+                    { pinyin: 'gē1', hanzi: '割', english: 'cut' },
+                    { pinyin: 'duàn4', hanzi: '断', english: 'break' },
+                    { pinyin: 'xìng4', hanzi: '幸', english: 'luck' },
+                    { pinyin: 'fú2', hanzi: '福', english: 'fortune' },
+                    { pinyin: 'xǐ3', hanzi: '喜', english: 'joy' },
+                    { pinyin: 'yuè4', hanzi: '悦', english: 'delight' }
+                ],
+                // 相爱已经幻灭
+                [
+                    { pinyin: 'xiāng1', hanzi: '相', english: 'mutual' },
+                    { pinyin: 'ài4', hanzi: '爱', english: 'love' },
+                    { pinyin: 'yǐ3', hanzi: '已', english: 'already' },
+                    { pinyin: 'jīng1', hanzi: '经', english: 'already' },
+                    { pinyin: 'huàn4', hanzi: '幻', english: 'illusion' },
+                    { pinyin: 'miè4', hanzi: '灭', english: 'end' }
+                ]
+            ]);
+
+        // Legacy function for old manual approach (kept for compatibility)
+        function addSampleLyrics() {
+            sampleData.forEach((slideData, slideIndex) => {
+                const slideNumber = slideIndex + 1;
+                slideData.forEach(line => {
+                    newLine(slideNumber);
+                    line.forEach(char => {
+                        const characterGroup = document.createElement('div');
+                        const toneClass = getToneClass(char.pinyin);
+                        const toneBgClass = getToneBgClass(char.pinyin);
+                        characterGroup.className = `character-group ${toneBgClass}`;
+                        
+                        const cleanedPinyin = cleanPinyin(char.pinyin);
+                        
+                        // Generate unique origami pattern
+                        const origamiPatterns = generateOrigamiPattern();
+                        const origamiSVG = createOrigamiElement(origamiPatterns);
+                        
+                        characterGroup.innerHTML = `
+                            <div class="paper-texture"></div>
+                            <div class="fold-horizontal"></div>
+                            <div class="fold-vertical"></div>
+                            <div class="corner-fold"></div>
+                            <div class="pinyin ${toneClass}">${cleanedPinyin}</div>
+                            <div class="hanzi">${char.hanzi}</div>
+                            <div class="english">${char.english}</div>
+                            <div class="tone-bar"></div>
+                        `;
+                        
+                        // Add the origami pattern
+                        characterGroup.appendChild(origamiSVG);
+                        
+                        currentLines[slideIndex].appendChild(characterGroup);
+                    });
+                });
+            });
+        }
+
+        // Load sample lyrics when page loads
+        window.onload = function() {
+            // Check for saved dark mode preference
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (savedDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').checked = true;
+            }
+            
+            buildSlides(sampleData);
+        };
+
+        // Card navigation functions
+        function getCardsInCurrentSlide() {
+            const container = document.getElementById(`lyricsContainer${currentSlide}`);
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('.character-group'));
+        }
+        
+        function clearCardHighlight() {
+            document.querySelectorAll('.character-group.highlighted').forEach(card => {
+                card.classList.remove('highlighted');
+            });
+            currentCardIndex = -1;
+        }
+        
+        function highlightCard(index, skipScroll = false) {
+            const cards = getCardsInCurrentSlide();
+            if (index >= 0 && index < cards.length) {
+                clearCardHighlight();
+                cards[index].classList.add('highlighted');
+                currentCardIndex = index;
+                
+                // Scroll into view if needed (skip on slide transitions to avoid positioning issues)
+                if (!skipScroll) {
+                    cards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+        
+        function navigateToNextCard() {
+            const cards = getCardsInCurrentSlide();
+            
+            if (currentCardIndex === -1) {
+                // No card highlighted, start with first card
+                highlightCard(0);
+            } else if (currentCardIndex < cards.length - 1) {
+                // Highlight next card in current slide
+                highlightCard(currentCardIndex + 1);
+            } else {
+                // At last card of current slide, move to next slide
+                if (currentSlide < sectionData.length - 1) {
+                    nextSlide();
+                    // Wait for slide transition to complete (800ms) before highlighting
+                    setTimeout(() => {
+                        // Skip scroll on first card after slide transition
+                        highlightCard(0, true);
+                        // Allow normal scrolling after a brief delay
+                        setTimeout(() => {
+                            const firstCard = getCardsInCurrentSlide()[0];
+                            if (firstCard && firstCard.classList.contains('highlighted')) {
+                                firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
+                    }, 850); // Slightly longer than the 800ms transition
+                }
+            }
+        }
+        
+        function navigateToPreviousCard() {
+            const cards = getCardsInCurrentSlide();
+            
+            if (currentCardIndex === -1) {
+                // No card highlighted, start with last card
+                highlightCard(cards.length - 1);
+            } else if (currentCardIndex > 0) {
+                // Highlight previous card in current slide
+                highlightCard(currentCardIndex - 1);
+            } else {
+                // At first card of current slide, move to previous slide
+                if (currentSlide > 0) {
+                    previousSlide();
+                    // Wait for slide transition to complete (800ms) before highlighting
+                    setTimeout(() => {
+                        const newCards = getCardsInCurrentSlide();
+                        // Skip scroll on last card after slide transition
+                        highlightCard(newCards.length - 1, true);
+                        // Allow normal scrolling after a brief delay
+                        setTimeout(() => {
+                            const lastCard = newCards[newCards.length - 1];
+                            if (lastCard && lastCard.classList.contains('highlighted')) {
+                                lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
+                    }, 850); // Slightly longer than the 800ms transition
+                }
+            }
+        }
+
+        // Add keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                addCharacter(currentSlide + 1);
+            } else if (e.key === 'Enter' && e.shiftKey) {
+                newLine(currentSlide + 1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                clearCardHighlight(); // Clear highlights when changing slides
+                previousSlide();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                clearCardHighlight(); // Clear highlights when changing slides
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigateToPreviousCard();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateToNextCard();
+            } else if (e.key === 'Escape') {
+                if (currentCardIndex !== -1) {
+                    // If a card is highlighted, clear it first
+                    clearCardHighlight();
+                } else {
+                    closeModal();
+                }
+            }
+        });
+
+        // Add touch gesture support
+        let touchStartY = 0;
+        let touchStartX = 0;
+        let isScrolling = false;
+
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                touchStartY = e.touches[0].clientY;
+                touchStartX = e.touches[0].clientX;
+                isScrolling = false;
+            }
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touchCurrentY = e.touches[0].clientY;
+                const touchCurrentX = e.touches[0].clientX;
+                
+                const deltaY = touchCurrentY - touchStartY;
+                const deltaX = touchCurrentX - touchStartX;
+                
+                // Determine if this is a vertical swipe
+                if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50 && !isScrolling) {
+                    isScrolling = true;
+                    
+                    if (deltaY > 0) {
+                        previousSlide();
+                    } else {
+                        nextSlide();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('touchend', function(e) {
+            if (e.touches.length === 0) {
+                isScrolling = false;
+            }
+        });
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('infoModal');
+            const modalContent = document.querySelector('.modal-content');
+            
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Initialize navigation arrows
+        window.addEventListener('load', function() {
+            showSlide(0);
+        });
+    </script>
+</body>
+</html>

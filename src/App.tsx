@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { parseScene, ParsedScene } from './parser'
 import { sceneToSvg } from './sceneToSvg'
 import { renderFrames } from './animator/frameRenderer'
@@ -14,15 +14,21 @@ import { LogViewer } from './components/LogViewer'
 import { logger } from './lib/logger'
 import { progressTracker } from './lib/progressTracker'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
-import { Button } from './components/ui/button'
-import { Bug } from 'lucide-react'
 import { calculateFrameCount, SPEED_CONFIG } from './lib/animationSpeed'
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarSeparator,
+} from '@/components/ui/sidebar'
 
 export function App() {
   const [file, setFile] = useState<File | null>(null)
   const [parsedScene, setParsedScene] = useState<ParsedScene | null>(null)
   const [dashedCount, setDashedCount] = useState<number>(0)
-  const [progress, setProgress] = useState<number>(0)
   const [gifUrl, setGifUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +37,9 @@ export function App() {
   const [colorFrom, setColorFrom] = useState<string>('#000000')
   const [colorTo, setColorTo] = useState<string>('#ff0000')
   const [useGradientWave, setUseGradientWave] = useState<boolean>(false)
+  const [waveFrequency, setWaveFrequency] = useState<number>(1.0)
+  const [waveBandWidth, setWaveBandWidth] = useState<number>(0.3)
+  const [glintSpeed, setGlintSpeed] = useState<number>(0.006)
   // State for arrow thickness in pixels
   const [arrowThickness, setArrowThickness] = useState<number>(4)
   const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false)
@@ -42,7 +51,6 @@ export function App() {
     setGifUrl('')
     setParsedScene(null)
     setDashedCount(0)
-    setProgress(0)
     if (!uploadedFile) {
       setFile(null)
       logger.info('File upload cancelled', undefined, 'App');
@@ -90,6 +98,8 @@ export function App() {
       colorFrom,
       colorTo,
       useGradientWave,
+      waveFrequency,
+      waveBandWidth,
       arrowThickness
     }, 'App');
     
@@ -103,7 +113,6 @@ export function App() {
     
     setIsGenerating(true)
     setError(null)
-    setProgress(0)
     
     try {
       progressTracker.updateStep('parse-svg', { status: 'in-progress' });
@@ -127,10 +136,13 @@ export function App() {
         width,
         height,
         frameCount,
-        (i) => setProgress((i / frameCount) * 0.5),
+        undefined,
         colorFrom,
         colorTo,
         useGradientWave,
+        waveFrequency,
+        waveBandWidth,
+        glintSpeed,
         arrowThickness
       )
 
@@ -139,8 +151,7 @@ export function App() {
       const blob = await encodeGif(
         canvases,
         delay,
-        {},
-        (p) => setProgress(0.5 + p * 0.5)
+        {}
       )
 
       const url = URL.createObjectURL(blob);
@@ -162,13 +173,17 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-1 space-y-6">
+    <SidebarProvider className="bg-gray-50">
+      <Sidebar collapsible="icon" className="border-r">
+          <SidebarHeader className="px-2 pt-3 pb-1">
+            <div className="flex items-center gap-2 px-2">
+              <img src="/vite.svg" alt="logo" className="h-5 w-5 opacity-80" />
+              <span className="text-sm font-semibold text-gray-800">Excalidraw Flow</span>
+            </div>
+          </SidebarHeader>
+          <SidebarSeparator />
+          <SidebarContent className="gap-3 p-2">
             <FileUploader onFileUpload={handleFileUpload} />
-            {/* Progress bar integrated tightly below upload area */}
             <ProgressBar compact={true} />
             <AnimationSettings
               speed={animationSpeed}
@@ -179,6 +194,12 @@ export function App() {
               onColorToChange={setColorTo}
               useGradientWave={useGradientWave}
               onUseGradientWaveChange={setUseGradientWave}
+              waveFrequency={waveFrequency}
+              onWaveFrequencyChange={setWaveFrequency}
+              waveBandWidth={waveBandWidth}
+              onWaveBandWidthChange={setWaveBandWidth}
+              glintSpeed={glintSpeed}
+              onGlintSpeedChange={setGlintSpeed}
               thickness={arrowThickness}
               onThicknessChange={setArrowThickness}
               onGenerate={handleGenerateGif}
@@ -186,53 +207,43 @@ export function App() {
               disabled={!parsedScene || dashedCount === 0}
             />
             {error && <p className="text-red-600 text-sm">{error}</p>}
-          </div>
-          <div className="md:col-span-2 space-y-6">
-            <PreviewSection
-              file={file}
-              generatedGifUrl={gifUrl}
-              isGenerating={isGenerating}
-            />
-          </div>
-        </div>
-        
-        {/* Debug Panel Toggle */}
-        <div className="fixed bottom-4 right-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDebugPanel(!showDebugPanel)}
-            className="shadow-lg"
-          >
-            <Bug className="h-4 w-4 mr-2" />
-            {showDebugPanel ? 'Hide' : 'Show'} Debug Panel
-          </Button>
-        </div>
-        
-        {/* Debug Panel */}
-        {showDebugPanel && (
-          <div className="fixed bottom-16 right-4 w-[700px] max-h-[80vh] shadow-2xl bg-white rounded-lg overflow-hidden border">
-            <Tabs defaultValue="logs" className="flex flex-col h-full">
-              <div className="flex-shrink-0 border-b bg-gray-50">
-                <TabsList className="grid w-full grid-cols-2 bg-transparent">
-                  <TabsTrigger value="logs" className="data-[state=active]:bg-white">Logs</TabsTrigger>
-                  <TabsTrigger value="progress" className="data-[state=active]:bg-white">Progress</TabsTrigger>
-                </TabsList>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <TabsContent value="logs" className="h-full mt-0 overflow-hidden">
-                  <LogViewer />
-                </TabsContent>
-                <TabsContent value="progress" className="h-full mt-0 overflow-auto p-4">
-                  <ProgressBar />
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
-        )}
+          </SidebarContent>
+          <SidebarFooter className="px-2 pb-2">
+            <p className="text-[10px] text-gray-500 px-2">Built for Excalidraw scenes</p>
+          </SidebarFooter>
+      </Sidebar>
 
-      </main>
-    </div>
+      <SidebarInset className="bg-gray-50">
+          <Header onToggleDebug={() => setShowDebugPanel(!showDebugPanel)} isDebugOpen={showDebugPanel} />
+          <div className="flex-1 overflow-hidden p-4">
+            <div className="h-full rounded-xl border bg-white shadow-sm p-4 bg-dots">
+              <PreviewSection file={file} generatedGifUrl={gifUrl} isGenerating={isGenerating} />
+            </div>
+          </div>
+
+          {/* Debug Panel */}
+          {showDebugPanel && (
+            <div className="fixed bottom-4 right-4 w-[720px] h-[70vh] shadow-2xl bg-white rounded-lg overflow-hidden border-2 border-gray-900">
+              <Tabs defaultValue="logs" className="flex flex-col h-full">
+                <div className="flex-shrink-0 border-b bg-gray-50">
+                  <TabsList className="grid w-full grid-cols-2 bg-transparent">
+                    <TabsTrigger value="logs" className="data-[state=active]:bg-white">Logs</TabsTrigger>
+                    <TabsTrigger value="progress" className="data-[state=active]:bg-white">Progress</TabsTrigger>
+                  </TabsList>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <TabsContent value="logs" className="h-full mt-0 overflow-hidden p-0">
+                    <LogViewer />
+                  </TabsContent>
+                  <TabsContent value="progress" className="h-full mt-0 overflow-auto p-4">
+                    <ProgressBar />
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </div>
+          )}
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 
