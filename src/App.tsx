@@ -151,7 +151,13 @@ export function App() {
       const blob = await encodeGif(
         canvases,
         delay,
-        {}
+        {
+          quality: 2,        // denser sampling for stable colors
+          workers: 4,        // faster encoding
+          transparent: false,
+          dither: false,     // avoid frame-to-frame dither noise
+          globalPalette: true // single palette across frames to prevent flicker
+        }
       )
 
       const url = URL.createObjectURL(blob);

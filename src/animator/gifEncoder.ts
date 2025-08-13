@@ -14,7 +14,7 @@ import { progressTracker } from '@/lib/progressTracker';
 export function encodeGif(
   canvases: HTMLCanvasElement[],
   frameDelay: number,
-  options: { quality?: number; workers?: number; transparent?: boolean } = {},
+  options: { quality?: number; workers?: number; transparent?: boolean; dither?: boolean | string; globalPalette?: boolean } = {},
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ export function encodeGif(
       return
     }
     
-    const { quality = 10, workers = 2, transparent = false } = options
+    const { quality = 10, workers = 2, transparent = false, dither = false, globalPalette = false } = options
     
     logger.info('Starting GIF encoding', {
       frameCount: canvases.length,
@@ -34,7 +34,9 @@ export function encodeGif(
       quality,
       workers,
       transparent,
-      dimensions: { width: canvases[0].width, height: canvases[0].height }
+      dimensions: { width: canvases[0].width, height: canvases[0].height },
+      dither,
+      globalPalette
     }, 'GifEncoder');
     
     progressTracker.updateStep('encode-gif', { 
@@ -78,6 +80,8 @@ export function encodeGif(
       height: processedCanvases[0].height,
       background: '#ffffff',
       transparent: transparent ? 0xFF00FF : null, // Use magenta as transparent color if needed
+      dither,
+      globalPalette
     })
     
     logger.debug('Adding frames to GIF encoder', { frameCount: processedCanvases.length }, 'GifEncoder');
