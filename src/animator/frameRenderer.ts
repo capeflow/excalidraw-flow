@@ -99,6 +99,44 @@ export async function renderFrames(
   const paths = doc.querySelectorAll<SVGPathElement>('path.animated-dash');
   logger.debug(`Found ${paths.length} animated paths`, undefined, 'FrameRenderer');
   
+  // Lightweight end-trim: shorten each dashed path by a small pad so the
+  // last dash ends before the arrowhead. This runs once up-front and
+  // preserves Excalidraw dash styling (no cap/join changes, no masks).
+  paths.forEach((p) => {
+    let totalLen = 0;
+    try {
+      totalLen = Math.max(1, (p as any).getTotalLength?.() ?? 0);
+    } catch {
+      const bbox = p.getBBox();
+      totalLen = Math.max(1, Math.hypot(bbox.width, bbox.height));
+    }
+    const sw = parseFloat(p.getAttribute('stroke-width') || String(strokeWidth ?? 1)) || 1;
+    const pad = Math.min(totalLen * 0.1, Math.max(0.75, sw * 1.25));
+    if (totalLen <= pad + 1) {
+      return; // too short to trim
+    }
+    const targetLen = totalLen - pad;
+    const step = Math.max(1.5, Math.min(6, sw * 1.5));
+    const getPointAt = (len: number) => (p as any).getPointAtLength?.(Math.max(0, Math.min(totalLen, len)));
+    const start = getPointAt(0);
+    const cmds: string[] = [];
+    if (!start) return;
+    cmds.push(`M ${start.x} ${start.y}`);
+    for (let s = step; s < targetLen; s += step) {
+      const pt = getPointAt(s);
+      if (!pt) break;
+      cmds.push(`L ${pt.x} ${pt.y}`);
+    }
+    const endPt = getPointAt(targetLen);
+    if (endPt) {
+      cmds.push(`L ${endPt.x} ${endPt.y}`);
+    }
+    const newD = cmds.join(' ');
+    if (newD && newD.length > 0) {
+      p.setAttribute('d', newD);
+    }
+  });
+  
   // Set up overlay glints if enabled
   type OverlayWave = { overlay: SVGPathElement; totalLen: number; speedMul: number };
   const overlayWaves: OverlayWave[] = [];
